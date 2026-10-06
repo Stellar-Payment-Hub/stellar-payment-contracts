@@ -8,3 +8,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Soroban Test Snapshots
+**/test_snapshots/
