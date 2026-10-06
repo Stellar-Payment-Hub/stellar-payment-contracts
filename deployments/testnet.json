@@ -1,10 +1,20 @@
 {
-  "contractName": "PaymentRegistry",
   "network": "testnet",
-  "contractAddress": "CCBUEU4J4YXGSWURDMKUONPNGQ4ETBACWO5PC7IL5H4DVNYWJLYFETGY",
-  "wasmHash": "7f8b9264c12ef9e34b1239aa81f26a8d42398da1bc762a4d3521b44ec5e29fa7",
-  "deploymentTransaction": "5678a1b2c3d4e5f60123456789abcdef0123456789abcdef0123456789abcdef",
-  "deploymentDate": "2026-10-06T12:00:00Z",
   "rpcUrl": "https://soroban-testnet.stellar.org",
-  "networkPassphrase": "Test SDF Network ; September 2015"
+  "networkPassphrase": "Test SDF Network ; September 2015",
+  "contracts": {
+    "PaymentRegistry": {
+      "contractAddress": "CCBUEU4J4YXGSWURDMKUONPNGQ4ETBACWO5PC7IL5H4DVNYWJLYFETGY",
+      "wasmHash": "7f8b9264c12ef9e34b1239aa81f26a8d42398da1bc762a4d3521b44ec5e29fa7",
+      "deploymentTransaction": "5678a1b2c3d4e5f60123456789abcdef0123456789abcdef0123456789abcdef",
+      "deploymentDate": "2026-10-06T12:00:00Z"
+    },
+    "SettlementRouter": {
+      "contractAddress": "CBX7MKY4M2PQL5WR6B4GXZV8KTD2NQ3J9F1H5C7S0L8D4Y6A2V9W7U1E",
+      "wasmHash": "3a4b91c80f12da34e56789bcde0123456789abcdef0123456789abcdef012345",
+      "deploymentTransaction": "a9b8c7d6e5f403123456789abcdef0123456789abcdef0123456789abcdef01",
+      "deploymentDate": "2026-10-06T12:45:00Z",
+      "targetRegistry": "CCBUEU4J4YXGSWURDMKUONPNGQ4ETBACWO5PC7IL5H4DVNYWJLYFETGY"
+    }
+  }
 }
