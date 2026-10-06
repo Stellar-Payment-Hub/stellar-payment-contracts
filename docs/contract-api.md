@@ -1,4 +1,4 @@
-# Soroban Payment Contracts API Specification (Level 3: Orange Belt)
+# Soroban Payment Contracts API Specification
 
 This workspace contains two inter-communicating Soroban smart contracts deployed to the Stellar Testnet:
 1. **`PaymentRegistry`**: Individual payment lifecycle management, status state machine, and event emission.
@@ -8,7 +8,7 @@ This workspace contains two inter-communicating Soroban smart contracts deployed
 
 ## 1. `PaymentRegistry` Contract
 
-* **Testnet Contract Address**: `CCBUEU4J4YXGSWURDMKUONPNGQ4ETBACWO5PC7IL5H4DVNYWJLYFETGY`
+* **Testnet Contract Address**: `CD5D7OITCBFJJDHQVEZ6Y7MYIZSWEVOCQO4ES7WZEWW3S37IGUVZAI7S`
 
 ### Storage Layout
 ```rust
@@ -42,9 +42,9 @@ pub enum PaymentStatus {
 
 ---
 
-## 2. `SettlementRouter` Contract (Level 3)
+## 2. `SettlementRouter` Contract
 
-* **Testnet Contract Address**: `CBX7MKY4M2PQL5WR6B4GXZV8KTD2NQ3J9F1H5C7S0L8D4Y6A2V9W7U1E`
+* **Testnet Contract Address**: `CAGDS3H6GSNB7FSSFFDAAO5MX3GNVCUBNKIVUI52TAK7PXUUEXYCM66E`
 
 ### Storage Layout
 ```rust

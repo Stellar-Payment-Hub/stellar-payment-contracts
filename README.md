@@ -2,8 +2,8 @@
 
 [![Contracts CI](https://github.com/Stellar-Payment-Hub/stellar-payment-contracts/actions/workflows/ci.yml/badge.svg)](https://github.com/Stellar-Payment-Hub/stellar-payment-contracts/actions/workflows/ci.yml)
 [![Stellar Network](https://img.shields.io/badge/Stellar-Testnet-38bdf8)](https://stellar.org)
-[![Soroban Registry](https://img.shields.io/badge/Soroban-PaymentRegistry-a855f7)](https://stellar.expert/explorer/testnet/contract/CCBUEU4J4YXGSWURDMKUONPNGQ4ETBACWO5PC7IL5H4DVNYWJLYFETGY)
-[![Soroban Settlement](https://img.shields.io/badge/Soroban-SettlementRouter-f97316)](https://stellar.expert/explorer/testnet/contract/CBX7MKY4M2PQL5WR6B4GXZV8KTD2NQ3J9F1H5C7S0L8D4Y6A2V9W7U1E)
+[![Soroban Registry](https://img.shields.io/badge/Soroban-PaymentRegistry-a855f7)](https://stellar.expert/explorer/testnet/contract/CD5D7OITCBFJJDHQVEZ6Y7MYIZSWEVOCQO4ES7WZEWW3S37IGUVZAI7S)
+[![Soroban Settlement](https://img.shields.io/badge/Soroban-SettlementRouter-f97316)](https://stellar.expert/explorer/testnet/contract/CAGDS3H6GSNB7FSSFFDAAO5MX3GNVCUBNKIVUI52TAK7PXUUEXYCM66E)
 [![Tests Passing](https://img.shields.io/badge/Tests-11%2F11%20Passed-10b981)](https://github.com/Stellar-Payment-Hub/stellar-payment-contracts/actions)
 [![Gas Optimized](https://img.shields.io/badge/Gas%20Footprint-%3C1%25%20Network%20Budget-0284c7)](https://soroban.stellar.org/docs/fundamentals-and-concepts/fees-and-metering)
 [![Rust](https://img.shields.io/badge/Rust-2021%20Edition-black?logo=rust)](https://www.rust-lang.org/)
@@ -17,8 +17,8 @@ Production-grade **Soroban smart contract suite** powering the **Stellar Payment
 
 | Contract | Network | Contract Address | Stellar Explorer Link |
 | :--- | :--- | :--- | :--- |
-| **SettlementRouter** | Stellar Testnet | `CBX7MKY4M2PQL5WR6B4GXZV8KTD2NQ3J9F1H5C7S0L8D4Y6A2V9W7U1E` | [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CBX7MKY4M2PQL5WR6B4GXZV8KTD2NQ3J9F1H5C7S0L8D4Y6A2V9W7U1E) |
-| **PaymentRegistry** | Stellar Testnet | `CCBUEU4J4YXGSWURDMKUONPNGQ4ETBACWO5PC7IL5H4DVNYWJLYFETGY` | [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CCBUEU4J4YXGSWURDMKUONPNGQ4ETBACWO5PC7IL5H4DVNYWJLYFETGY) |
+| **SettlementRouter** | Stellar Testnet | `CAGDS3H6GSNB7FSSFFDAAO5MX3GNVCUBNKIVUI52TAK7PXUUEXYCM66E` | [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CAGDS3H6GSNB7FSSFFDAAO5MX3GNVCUBNKIVUI52TAK7PXUUEXYCM66E) |
+| **PaymentRegistry** | Stellar Testnet | `CD5D7OITCBFJJDHQVEZ6Y7MYIZSWEVOCQO4ES7WZEWW3S37IGUVZAI7S` | [View on Stellar Expert](https://stellar.expert/explorer/testnet/contract/CD5D7OITCBFJJDHQVEZ6Y7MYIZSWEVOCQO4ES7WZEWW3S37IGUVZAI7S) |
 
 *Deployment parameters, build hashes, and network configurations are recorded in `deployments/testnet.json`.*
 
@@ -31,7 +31,7 @@ The contract architecture implements separation of concerns: `SettlementRouter` 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        SettlementRouter Contract                       │
-│              CBX7MKY4M2PQL5WR6B4GXZV8KTD2NQ3J9F1H5C7S0L8D4Y6A2V9W7U1E  │
+│              CAGDS3H6GSNB7FSSFFDAAO5MX3GNVCUBNKIVUI52TAK7PXUUEXYCM66E  │
 │                                                                        │
 │  • Batch recipient validation     • Mathematical invariant check       │
 │  • Remainder-safe bill splitting  • Atomic multi-recipient execution   │
@@ -43,7 +43,7 @@ The contract architecture implements separation of concerns: `SettlementRouter` 
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        PaymentRegistry Contract                        │
-│              CCBUEU4J4YXGSWURDMKUONPNGQ4ETBACWO5PC7IL5H4DVNYWJLYFETGY  │
+│              CD5D7OITCBFJJDHQVEZ6Y7MYIZSWEVOCQO4ES7WZEWW3S37IGUVZAI7S  │
 │                                                                        │
 │  • Granular payment lifecycle     • Replay-protected counter storage   │
 │  • State transitions & audit      • Persistent topic event emissions   │
@@ -205,5 +205,5 @@ stellar contract deploy \
 ```
 
 Deployments are permanently indexed on the Stellar Network Explorer:
-* [SettlementRouter Contract Explorer](https://stellar.expert/explorer/testnet/contract/CBX7MKY4M2PQL5WR6B4GXZV8KTD2NQ3J9F1H5C7S0L8D4Y6A2V9W7U1E)
-* [PaymentRegistry Contract Explorer](https://stellar.expert/explorer/testnet/contract/CCBUEU4J4YXGSWURDMKUONPNGQ4ETBACWO5PC7IL5H4DVNYWJLYFETGY)
+* [SettlementRouter Contract Explorer](https://stellar.expert/explorer/testnet/contract/CAGDS3H6GSNB7FSSFFDAAO5MX3GNVCUBNKIVUI52TAK7PXUUEXYCM66E)
+* [PaymentRegistry Contract Explorer](https://stellar.expert/explorer/testnet/contract/CD5D7OITCBFJJDHQVEZ6Y7MYIZSWEVOCQO4ES7WZEWW3S37IGUVZAI7S)
