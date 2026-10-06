@@ -1,4 +1,4 @@
-# Stellar Payment Hub - Contracts
+# Stellar Payment Hub - Contracts (Level 2: Yellow Belt)
 
 [![Contracts CI](https://github.com/Stellar-Payment-Hub/stellar-payment-contracts/actions/workflows/ci.yml/badge.svg)](https://github.com/Stellar-Payment-Hub/stellar-payment-contracts/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -8,79 +8,78 @@ Soroban smart contracts workspace for **Stellar Payment Hub**.
 
 ---
 
-## Level 1: White Belt Status
+## Level 2: Yellow Belt Status
 
-In **Level 1**, this repository provides the structural foundation and workspace scaffold:
-* **Contract Status**: Scaffolded (`payment-registry`)
-* **Deployment Status**: Not deployed on Testnet/Mainnet yet (Level 1 payments use native Stellar operations directly)
-* **Contract Address**: None claimed or fabricated
-
-Level 2 will introduce deployed Soroban contracts for the Payment Registry and contract event emissions.
+In **Level 2**, this repository provides the programmable payment coordination contract:
+* **Contract Name**: `PaymentRegistry`
+* **Network**: **Stellar Testnet**
+* **Deployed Contract Address**: [`CCBUEU4J4YXGSWURDMKUONPNGQ4ETBACWO5PC7IL5H4DVNYWJLYFETGY`](https://stellar.expert/explorer/testnet/contract/CCBUEU4J4YXGSWURDMKUONPNGQ4ETBACWO5PC7IL5H4DVNYWJLYFETGY)
+* **Metadata**: Recorded in `deployments/testnet.json`
 
 ---
 
-## Repository Structure
+## Contract Overview & Architecture
+
+The `PaymentRegistry` contract manages programmable payment requests and enforces non-custodial lifecycle state transitions on-chain:
 
 ```text
-stellar-payment-contracts/
-├── contracts/
-│   └── payment-registry/      # Soroban contract for payment tracking
-│       ├── src/
-│       │   └── lib.rs         # Contract entry point and records
-│       └── Cargo.toml
-├── docs/
-│   └── architecture.md        # Technical contract roadmap
-├── scripts/
-│   ├── build.sh               # WASM compilation script
-│   └── test.sh                # Test runner script
-├── .github/
-│   └── workflows/
-│       └── ci.yml             # GitHub Actions CI workflow
-├── Cargo.toml                 # Workspace manifest
-├── Makefile                   # Developer task automation
-└── README.md
+               +---------------------------+
+               |      create_payment()     |
+               +-------------+-------------+
+                             |
+                             v
+                    [ PENDING (0) ]
+                      /    |    \
+                     /     |     \
+                    v      v      v
+        [ PROCESSING (1) ] |   [ CANCELLED (4) ]
+             |     |       |
+             |     \       /
+             |      v     v
+             |   [ FAILED (3) ]
+             v
+      [ COMPLETED (2) ]
 ```
 
 ---
 
-## Prerequisites
+## Public Functions
 
-* Rust `1.80+` or `stable`
-* `wasm32-unknown-unknown` target:
-  ```bash
-  rustup target add wasm32-unknown-unknown
-  ```
-* Soroban CLI (optional for Level 1, required for Level 2):
-  ```bash
-  cargo install --locked stellar-cli
-  ```
+| Function | Parameters | Description |
+| :--- | :--- | :--- |
+| `initialize` | `admin: Address` | Sets the contract administrator |
+| `create_payment` | `creator: Address, recipient: Address, amount: i128, memo: String` | Generates a new payment record (requires `creator` auth) |
+| `get_payment` | `id: u64` | Retrieves payment record by ID |
+| `update_payment_status` | `caller: Address, id: u64, new_status: PaymentStatus` | Updates payment status with state machine invariant checks |
+| `complete_payment` | `caller: Address, id: u64` | Marks payment as completed and immutable |
+| `cancel_payment` | `caller: Address, id: u64` | Cancels payment prior to completion |
+| `get_payment_count` | *none* | Returns total number of registered payments |
 
 ---
 
-## Local Development
+## Contract Events
 
-### Check Workspace
-```bash
-cargo check
-```
+The contract emits structured Soroban events for real-time backend synchronization:
+* **`(payment, created)`**: `(id, creator, recipient, amount)`
+* **`(payment, updated)`**: `(id, new_status, timestamp)`
+* **`(payment, completed)`**: `(id, timestamp)`
+* **`(payment, cancelled)`**: `(id, timestamp)`
 
-### Run Tests
+See [docs/events.md](docs/events.md) for full payload schemas.
+
+---
+
+## Local Development & Testing
+
+### Run Contract Unit Tests
 ```bash
 cargo test
 ```
 
-### Build WASM
+### Build WASM Target
 ```bash
 cargo build --target wasm32-unknown-unknown --release
 ```
-
----
-
-## Architecture Roadmap
-
-* **Level 1 (Foundation)**: Workspace scaffolding & interface definition.
-* **Level 2 (Yellow Belt)**: `PaymentRegistry` contract with event publishing and audit trails.
-* **Level 3 (Black Belt)**: `PaymentSettlement` contract for automated split payments and tip pooling.
 
 ---
 
