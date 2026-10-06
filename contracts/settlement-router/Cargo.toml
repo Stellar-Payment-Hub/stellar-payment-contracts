@@ -1,9 +1,9 @@
 [package]
-name = "payment-registry"
+name = "settlement-router"
 version = "0.1.0"
 edition = "2021"
 authors = ["Daniel Omoloba <274010761+omolobamoyinoluwa-max@users.noreply.github.com>"]
-description = "Stellar Payment Hub - Payment Registry Soroban contract scaffold"
+description = "Stellar Payment Hub - Advanced Settlement Router & Multi-Recipient Soroban Contract"
 license = "MIT"
 
 [lib]
@@ -14,3 +14,4 @@ soroban-sdk = { version = "22.0.0" }
 
 [dev-dependencies]
 soroban-sdk = { version = "22.0.0", features = ["testutils"] }
+payment-registry = { path = "../payment-registry" }
