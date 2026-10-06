@@ -64,7 +64,7 @@ Coordinates grouped financial disbursements and automated expense splitting.
 
 * **`create_settlement(env, payer, total_amount, recipients, memo) -> u64`**:
   * **Authorization**: Requires `payer.require_auth()`.
-  * **Validation**: Enforces $2 \le \text{recipients} \le 10$, verifies `sum(amounts) == total_amount`, rejects self-transfers (`payer == recipient`), and rejects duplicate recipients.
+  * **Validation**: Enforces 2 <= recipients <= 10, verifies `sum(amounts) == total_amount`, rejects self-transfers (`payer == recipient`), and rejects duplicate recipients.
   * **Storage**: Persists `SettlementRecord` in contract temporary storage; returns assigned `settlement_id`.
   * **Events**: Emits `SettlementCreated(settlement_id, payer, total_amount)`.
 * **`execute_settlement(env, settlement_id, registry_address) -> bool`**:
@@ -89,7 +89,7 @@ Maintains immutable records and lifecycle states for individual payments.
 * **`get_payment(env, payment_id) -> Option<PaymentRecord>`**:
   * Fetches full payment record (`creator`, `recipient`, `amount`, `status`, `created_at`, `memo`).
 * **`update_status(env, payment_id, new_status) -> bool`**:
-  * Enforces state machine rules: `PENDING` $\to$ `PROCESSING` $\to$ `COMPLETED`.
+  * Enforces state machine rules: `PENDING` -> `PROCESSING` -> `COMPLETED`.
   * Emits `PaymentUpdated` and `PaymentCompleted`.
 * **`cancel_payment(env, payment_id) -> bool`**:
   * Transitions an uncompleted payment to `CANCELLED`. Requires `creator.require_auth()`.
@@ -130,7 +130,7 @@ Both contracts define strongly-typed error enums (`#[contracterror]`) with expli
 | **`5`** | `AlreadyCompleted` | Attempted to modify or cancel a finalized payment | Completed payments are final and cannot be modified |
 | **`6`** | `AlreadyCancelled` | Attempted to modify or complete a cancelled payment | Create a new payment record instead |
 | **`7`** | `Unauthorized` | Caller identity did not match the creator or authorized party | Sign the invocation with the originating creator's wallet |
-| **`8`** | `InvalidTransition` | Attempted illegal state transition (e.g. `COMPLETED` $\to$ `PENDING`) | Follow permitted sequence: `PENDING` $\to$ `PROCESSING` $\to$ `COMPLETED` |
+| **`8`** | `InvalidTransition` | Attempted illegal state transition (e.g. `COMPLETED` -> `PENDING`) | Follow permitted sequence: `PENDING` -> `PROCESSING` -> `COMPLETED` |
 | **`9`** | `SameAddress` | Recipient address is identical to the creator address | Self-transfers are disallowed; specify a different counterparty |
 
 ### `SettlementRouter` (`SettlementError`)
@@ -141,13 +141,13 @@ Both contracts define strongly-typed error enums (`#[contracterror]`) with expli
 | **`2`** | `NotInitialized` | Contract invoked prior to initial setup | Call initialization with valid router config |
 | **`3`** | `Unauthorized` | Caller is not the payer or authorized entity | Ensure the payer signs the transaction |
 | **`4`** | `SettlementNotFound` | Requested `settlement_id` does not exist | Verify the settlement identifier |
-| **`5`** | `InvalidStatusTransition` | Illegal status change on settlement record | Status changes must follow: `CREATED` $\to$ `PROCESSING` $\to$ `COMPLETED` |
+| **`5`** | `InvalidStatusTransition` | Illegal status change on settlement record | Status changes must follow: `CREATED` -> `PROCESSING` -> `COMPLETED` |
 | **`6`** | `InvalidTotalAmount` | Total settlement amount is non-positive | Specify a total settlement amount greater than 0 |
 | **`7`** | `EmptyRecipients` | Settlement payload contains zero recipients | Provide at least 2 distinct recipient entries |
-| **`8`** | `TooManyRecipients` | Recipient count exceeds maximum capacity ($>10$) | Split the batch disbursement into smaller groups of $\le 10$ |
+| **`8`** | `TooManyRecipients` | Recipient count exceeds maximum capacity (> 10) | Split the batch disbursement into smaller groups of <= 10 |
 | **`9`** | `InvalidShareAmount` | Individual recipient share is non-positive | Every participant must receive at least 1 stroop |
 | **`10`** | `PayerIsRecipient` | Payer address included in the recipient list | Remove payer from recipient list; only pay counterparties |
-| **`11`** | `SumMismatch` | $\sum \text{recipient amounts} \ne \text{total\_amount}$ | Recalculate recipient shares to sum exactly to the settlement total |
+| **`11`** | `SumMismatch` | `sum(recipient amounts) != total_amount` | Recalculate recipient shares to sum exactly to the settlement total |
 | **`12`** | `RegistryCallFailed` | Cross-contract dispatch to `PaymentRegistry` reverted | Verify registry contract ID and network connectivity |
 
 ---
