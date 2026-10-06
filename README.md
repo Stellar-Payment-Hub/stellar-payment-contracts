@@ -61,11 +61,11 @@ The contract suite separates high-level settlement aggregation from granular ind
 Coordinates grouped financial disbursements and automated expense splitting.
 
 * **`create_settlement(env, payer, total_amount, recipients, memo) -> u64`**:
-  Validates recipient addresses, verifies that $\sum \text{amounts} = \text{total\_amount}$, stores the batch settlement record, and returns the settlement identifier. Requires authorization from `payer`.
+  Validates recipient addresses, verifies that `sum(amounts) == total_amount`, stores the batch settlement record, and returns the settlement identifier. Requires authorization from `payer`.
 * **`execute_settlement(env, settlement_id, registry_address) -> bool`**:
   Executes the settlement by dispatching cross-contract calls via `PaymentRegistryClient` to instantiate child payment records for each recipient in the registry. Emits `SettlementRecipientProcessed` and `SettlementCompleted`.
 * **`split_bill(env, payer, total_bill, participant_count, recipients, memo) -> u64`**:
-  Divides `total_bill` equally among `participant_count` addresses. Handles remainder stroops safely by allocating rounding residuals to leading participants, ensuring $0$ ledger loss.
+  Divides `total_bill` equally among `participant_count` addresses. Handles remainder stroops safely by allocating rounding residuals to leading participants, ensuring 0 ledger loss.
 * **`get_settlement(env, settlement_id) -> Option<SettlementRecord>`**:
   Retrieves full settlement metadata, total amount, status, and individual recipient entries.
 * **`cancel_settlement(env, settlement_id) -> bool`**:
@@ -80,7 +80,7 @@ Maintains immutable records and lifecycle states for individual payments.
 * **`get_payment(env, payment_id) -> Option<PaymentRecord>`**:
   Fetches full record (creator, recipient, amount, status, timestamps, memo).
 * **`update_status(env, payment_id, new_status) -> bool`**:
-  Executes state transitions (`PENDING` $\to$ `PROCESSING` $\to$ `COMPLETED`).
+  Executes state transitions (`PENDING` -> `PROCESSING` -> `COMPLETED`).
 * **`cancel_payment(env, payment_id) -> bool`**:
   Cancels unfinalized payments. Requires creator authorization.
 
