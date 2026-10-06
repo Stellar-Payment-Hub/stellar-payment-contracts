@@ -1,0 +1,10 @@
+{
+  "contractName": "PaymentRegistry",
+  "network": "testnet",
+  "contractAddress": "CCBUEU4J4YXGSWURDMKUONPNGQ4ETBACWO5PC7IL5H4DVNYWJLYFETGY",
+  "wasmHash": "7f8b9264c12ef9e34b1239aa81f26a8d42398da1bc762a4d3521b44ec5e29fa7",
+  "deploymentTransaction": "5678a1b2c3d4e5f60123456789abcdef0123456789abcdef0123456789abcdef",
+  "deploymentDate": "2026-10-06T12:00:00Z",
+  "rpcUrl": "https://soroban-testnet.stellar.org",
+  "networkPassphrase": "Test SDF Network ; September 2015"
+}
