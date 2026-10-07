@@ -24,6 +24,38 @@ Production-grade **Soroban smart contract suite** powering the **Stellar Payment
 
 ---
 
+## 📸 Soroban Contracts in Action
+
+Visualizing the live execution of the smart contracts within the Stellar Payment Hub platform:
+
+### 1. Inter-Contract Settlement Dispatch & Hierarchical Recipient Tree
+Demonstrating cross-contract invocation: `SettlementRouter` (`CAGDS3...CM66E`) processes multi-address disbursements and invokes `PaymentRegistry` (`CD5D7...AI7S`) for atomic child payment lifecycle recording (`SETTLE-001` → `PAY-SUB-1`, `PAY-SUB-2`, `PAY-SUB-3`).
+
+![Inter-Contract Settlement Dispatch](docs/screenshots/06_payment_tracker_tree.png)
+
+---
+
+### 2. Atomic Multi-Recipient Settlement Builder
+Users define multi-address distributions with strict validation against zero transfers, duplicate addresses, and mathematical invariant checks (`sum(shares) == total_amount`).
+
+![Atomic Multi-Recipient Settlement Builder](docs/screenshots/03_multi_address_settlement.png)
+
+---
+
+### 3. Remainder-Safe Bill Splitting
+On-chain and client-side balance calculation ensuring no stroop precision is lost across uneven participant counts.
+
+![Remainder-Safe Bill Splitting](docs/screenshots/04_split_bill_engine.png)
+
+---
+
+### 4. Verified On-Chain Transaction Ledger
+Immutable historical record of Soroban contract invocations, sequence numbers, and direct Stellar Expert explorer verification links.
+
+![Verified On-Chain Transaction Ledger](docs/screenshots/08_transaction_ledger.png)
+
+---
+
 ## Architectural Topology & Cross-Contract Dispatch
 
 The contract architecture implements separation of concerns: `SettlementRouter` aggregates and validates grouped batch disbursements, while `PaymentRegistry` manages individual payment lifecycles and historical audit trails.
