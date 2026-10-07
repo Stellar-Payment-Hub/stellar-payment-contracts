@@ -64,7 +64,7 @@ Coordinates grouped financial disbursements and automated expense splitting.
 
 * **`create_settlement(env, payer, total_amount, recipients, memo) -> u64`**:
   * **Authorization**: Requires `payer.require_auth()`.
-  * **Validation**: Enforces 2 <= recipients <= 10, verifies `sum(amounts) == total_amount`, rejects self-transfers (`payer == recipient`), and rejects duplicate recipients.
+  * **Validation**: Enforces `2 <= recipients <= 10`, verifies `sum(amounts) == total_amount`, rejects self-transfers (`payer == recipient`), and rejects duplicate recipients.
   * **Storage**: Persists `SettlementRecord` in contract temporary storage; returns assigned `settlement_id`.
   * **Events**: Emits `SettlementCreated(settlement_id, payer, total_amount)`.
 * **`execute_settlement(env, settlement_id, registry_address) -> bool`**:
@@ -144,7 +144,7 @@ Both contracts define strongly-typed error enums (`#[contracterror]`) with expli
 | **`5`** | `InvalidStatusTransition` | Illegal status change on settlement record | Status changes must follow: `CREATED` -> `PROCESSING` -> `COMPLETED` |
 | **`6`** | `InvalidTotalAmount` | Total settlement amount is non-positive | Specify a total settlement amount greater than 0 |
 | **`7`** | `EmptyRecipients` | Settlement payload contains zero recipients | Provide at least 2 distinct recipient entries |
-| **`8`** | `TooManyRecipients` | Recipient count exceeds maximum capacity (> 10) | Split the batch disbursement into smaller groups of <= 10 |
+| **`8`** | `TooManyRecipients` | Recipient count exceeds maximum capacity (> 10) | Split the batch disbursement into smaller groups of `<= 10` |
 | **`9`** | `InvalidShareAmount` | Individual recipient share is non-positive | Every participant must receive at least 1 stroop |
 | **`10`** | `PayerIsRecipient` | Payer address included in the recipient list | Remove payer from recipient list; only pay counterparties |
 | **`11`** | `SumMismatch` | `sum(recipient amounts) != total_amount` | Recalculate recipient shares to sum exactly to the settlement total |

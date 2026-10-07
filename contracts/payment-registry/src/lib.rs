@@ -22,7 +22,7 @@ impl PaymentRegistry {
         Ok(())
     }
 
-    /// Read contract status (Level 1 backwards compatibility).
+    /// Read contract status and availability.
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("ready")
     }
