@@ -365,6 +365,40 @@ impl SettlementRouter {
         storage::get_milestone(&env, settlement_id, index).ok_or(SettlementError::MilestoneNotFound)
     }
 
+    /// Release milestone funds upon deliverable completion (Payer or Arbitrator).
+    pub fn release_milestone(
+        env: Env,
+        caller: Address,
+        settlement_id: u64,
+        index: u32,
+    ) -> Result<(), SettlementError> {
+        caller.require_auth();
+
+        let record = storage::get_settlement(&env, settlement_id)
+            .ok_or(SettlementError::SettlementNotFound)?;
+
+        let arbitrator = storage::get_arbitrator(&env);
+        let is_payer = record.payer == caller;
+        let is_arb = arbitrator.map(|a| a == caller).unwrap_or(false);
+
+        if !is_payer && !is_arb {
+            return Err(SettlementError::Unauthorized);
+        }
+
+        let mut milestone = storage::get_milestone(&env, settlement_id, index)
+            .ok_or(SettlementError::MilestoneNotFound)?;
+
+        if milestone.executed {
+            return Err(SettlementError::MilestoneAlreadyExecuted);
+        }
+
+        milestone.executed = true;
+        storage::set_milestone(&env, settlement_id, index, &milestone);
+        events::emit_milestone_released(&env, settlement_id, index, milestone.amount);
+        storage::extend_settlement_ttl(&env, settlement_id);
+        Ok(())
+    }
+
     /// Pause router operations (Admin only).
     pub fn pause(env: Env, admin: Address) -> Result<(), SettlementError> {
         admin.require_auth();

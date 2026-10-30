@@ -70,3 +70,8 @@ pub fn emit_dispute_resolved(env: &Env, settlement_id: u64, verdict: u32) {
     let topics = (soroban_sdk::symbol_short!("verdict"), settlement_id);
     env.events().publish(topics, verdict);
 }
+
+pub fn emit_milestone_released(env: &Env, settlement_id: u64, index: u32, amount: i128) {
+    let topics = (soroban_sdk::symbol_short!("milestone"), settlement_id);
+    env.events().publish(topics, (index, amount));
+}
