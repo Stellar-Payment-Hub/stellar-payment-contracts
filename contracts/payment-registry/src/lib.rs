@@ -118,6 +118,9 @@ impl PaymentRegistry {
         amount: i128,
         memo: String,
     ) -> Result<u64, ContractError> {
+        if storage::is_paused(&env) {
+            return Err(ContractError::ContractPaused);
+        }
         creator.require_auth();
 
         if amount <= 0 {
@@ -128,6 +131,7 @@ impl PaymentRegistry {
             return Err(ContractError::SameAddress);
         }
 
+        storage::extend_instance_ttl(&env);
         let id = storage::increment_count(&env);
         let timestamp = env.ledger().timestamp();
 
@@ -136,16 +140,86 @@ impl PaymentRegistry {
             creator: creator.clone(),
             recipient: recipient.clone(),
             amount,
+            token: None,
+            category: PaymentCategory::Standard,
             memo,
+            memo_hash: None,
             status: PaymentStatus::Pending,
+            deadline: None,
             created_at: timestamp,
             updated_at: timestamp,
         };
 
         storage::set_payment(&env, id, &payment);
+        storage::extend_payment_ttl(&env, id);
         events::emit_payment_created(&env, id, &creator, &recipient, amount);
 
         Ok(id)
+    }
+
+    /// Batch register multiple payment entries in an atomic call for gas optimization.
+    pub fn create_payments_batch(
+        env: Env,
+        creator: Address,
+        recipients: Vec<Address>,
+        amounts: Vec<i128>,
+        memo: String,
+    ) -> Result<Vec<u64>, ContractError> {
+        if storage::is_paused(&env) {
+            return Err(ContractError::ContractPaused);
+        }
+        creator.require_auth();
+
+        let len = recipients.len();
+        if len == 0 {
+            return Err(ContractError::BatchEmpty);
+        }
+        if len > 50 {
+            return Err(ContractError::BatchTooLarge);
+        }
+        if len != amounts.len() {
+            return Err(ContractError::InvalidAmount);
+        }
+
+        storage::extend_instance_ttl(&env);
+        let timestamp = env.ledger().timestamp();
+        let mut created_ids = Vec::new(&env);
+
+        for i in 0..len {
+            let recipient = recipients.get(i).unwrap();
+            let amount = amounts.get(i).unwrap();
+
+            if amount <= 0 {
+                return Err(ContractError::InvalidAmount);
+            }
+            if creator == recipient {
+                return Err(ContractError::SameAddress);
+            }
+
+            let id = storage::increment_count(&env);
+            let payment = Payment {
+                id,
+                creator: creator.clone(),
+                recipient: recipient.clone(),
+                amount,
+                token: None,
+                category: PaymentCategory::Disbursement,
+                memo: memo.clone(),
+                memo_hash: None,
+                status: PaymentStatus::Pending,
+                deadline: None,
+                created_at: timestamp,
+                updated_at: timestamp,
+            };
+
+            storage::set_payment(&env, id, &payment);
+            storage::extend_payment_ttl(&env, id);
+            events::emit_payment_created(&env, id, &creator, &recipient, amount);
+            created_ids.push_back(id);
+        }
+
+        events::emit_batch_payments_created(&env, &creator, len);
+        Ok(created_ids)
     }
 
     /// Read a payment record by ID.

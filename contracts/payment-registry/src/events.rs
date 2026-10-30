@@ -46,3 +46,8 @@ pub fn emit_contract_upgraded(env: &Env, admin: &Address, new_wasm_hash: &soroba
     let topics = (soroban_sdk::symbol_short!("contract"), soroban_sdk::symbol_short!("upgraded"));
     env.events().publish(topics, (admin.clone(), new_wasm_hash.clone()));
 }
+
+pub fn emit_batch_payments_created(env: &Env, creator: &Address, count: u32) {
+    let topics = (soroban_sdk::symbol_short!("batch"), soroban_sdk::symbol_short!("created"));
+    env.events().publish(topics, (creator.clone(), count));
+}
