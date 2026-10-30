@@ -40,3 +40,13 @@ pub fn emit_settlement_cancelled(
     let topics = (symbol_short!("cancelled"), settlement_id, payer.clone());
     env.events().publish(topics, symbol_short!("cancelled"));
 }
+
+pub fn emit_settlement_refunded(
+    env: &Env,
+    settlement_id: u64,
+    payer: &Address,
+    amount: i128,
+) {
+    let topics = (soroban_sdk::symbol_short!("refund"), settlement_id, payer.clone());
+    env.events().publish(topics, amount);
+}

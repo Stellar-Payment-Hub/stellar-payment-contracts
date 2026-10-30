@@ -280,4 +280,32 @@ impl SettlementRouter {
         events::emit_settlement_cancelled(&env, settlement_id, &record.payer);
         Ok(())
     }
+
+    /// Refund an unexecuted or cancelled settlement to the payer.
+    pub fn refund_settlement(
+        env: Env,
+        settlement_id: u64,
+        caller: Address,
+    ) -> Result<(), SettlementError> {
+        caller.require_auth();
+
+        let mut record = storage::get_settlement(&env, settlement_id)
+            .ok_or(SettlementError::SettlementNotFound)?;
+
+        if record.payer != caller {
+            return Err(SettlementError::Unauthorized);
+        }
+
+        if record.status != SettlementStatus::Cancelled && record.status != SettlementStatus::Created {
+            return Err(SettlementError::InvalidStatusTransition);
+        }
+
+        record.status = SettlementStatus::Cancelled;
+        record.updated_at = env.ledger().timestamp();
+        storage::set_settlement(&env, settlement_id, &record);
+        storage::extend_settlement_ttl(&env, settlement_id);
+
+        events::emit_settlement_refunded(&env, settlement_id, &record.payer, record.total_amount);
+        Ok(())
+    }
 }
