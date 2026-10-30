@@ -222,6 +222,55 @@ impl PaymentRegistry {
         Ok(created_ids)
     }
 
+    /// Create a payment with cryptographic invoice memo hash verification.
+    pub fn create_payment_with_hash(
+        env: Env,
+        creator: Address,
+        recipient: Address,
+        amount: i128,
+        memo: String,
+        memo_hash: BytesN<32>,
+        category: PaymentCategory,
+    ) -> Result<u64, ContractError> {
+        if storage::is_paused(&env) {
+            return Err(ContractError::ContractPaused);
+        }
+        creator.require_auth();
+
+        if amount <= 0 {
+            return Err(ContractError::InvalidAmount);
+        }
+        if creator == recipient {
+            return Err(ContractError::SameAddress);
+        }
+
+        storage::extend_instance_ttl(&env);
+        let id = storage::increment_count(&env);
+        let timestamp = env.ledger().timestamp();
+
+        let payment = Payment {
+            id,
+            creator: creator.clone(),
+            recipient: recipient.clone(),
+            amount,
+            token: None,
+            category,
+            memo,
+            memo_hash: Some(memo_hash.clone()),
+            status: PaymentStatus::Pending,
+            deadline: None,
+            created_at: timestamp,
+            updated_at: timestamp,
+        };
+
+        storage::set_payment(&env, id, &payment);
+        storage::extend_payment_ttl(&env, id);
+        events::emit_payment_created(&env, id, &creator, &recipient, amount);
+        events::emit_memo_hash_bound(&env, id, &memo_hash);
+
+        Ok(id)
+    }
+
     /// Read a payment record by ID.
     pub fn get_payment(env: Env, id: u64) -> Result<Payment, ContractError> {
         storage::extend_instance_ttl(&env);

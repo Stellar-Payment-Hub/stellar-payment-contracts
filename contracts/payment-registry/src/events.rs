@@ -51,3 +51,8 @@ pub fn emit_batch_payments_created(env: &Env, creator: &Address, count: u32) {
     let topics = (soroban_sdk::symbol_short!("batch"), soroban_sdk::symbol_short!("created"));
     env.events().publish(topics, (creator.clone(), count));
 }
+
+pub fn emit_memo_hash_bound(env: &Env, id: u64, memo_hash: &soroban_sdk::BytesN<32>) {
+    let topics = (soroban_sdk::symbol_short!("memo"), soroban_sdk::symbol_short!("bound"));
+    env.events().publish(topics, (id, memo_hash.clone()));
+}
