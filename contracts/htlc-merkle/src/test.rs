@@ -114,3 +114,45 @@ fn test_merkle_distribution_and_claim() {
     let double_claim = client.try_claim_merkle_leaf(&recipient, &dist_id, &0, &10_000_000, &proof);
     assert!(double_claim.is_err());
 }
+
+#[test]
+fn test_multihop_atomic_swap_invariant() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let contract_id = env.register(HtlcMerkleVault, ());
+    let client = HtlcMerkleVaultClient::new(&env, &contract_id);
+    client.initialize(&admin);
+
+    let alice = Address::generate(&env);
+    let bob = Address::generate(&env);
+    let usdc = Address::generate(&env);
+    let xlm = Address::generate(&env);
+
+    // Alice generates secret
+    let secret = BytesN::from_array(&env, &[88u8; 32]);
+    let hashlock = client.hash_preimage(&secret);
+
+    // Hop 1: Alice locks 100 USDC for Bob with 2h timelock
+    let leg1 = client.create_htlc(&alice, &bob, &usdc, &100_000_000, &hashlock, &7200);
+
+    // Hop 2: Bob locks 800 XLM for Alice with 1h timelock (Bob has shorter timelock)
+    let leg2 = client.create_htlc(&bob, &alice, &xlm, &800_000_000, &hashlock, &3600);
+
+    // Alice claims Hop 2 by revealing secret
+    let alice_claimed = client.claim_htlc(&alice, &leg2, &secret);
+    assert_eq!(alice_claimed, 800_000_000);
+
+    // The secret is now revealed in leg2's public state!
+    let revealed_secret = client.get_htlc(&leg2).unwrap().preimage.unwrap();
+    assert_eq!(revealed_secret, secret);
+
+    // Bob reads the secret and claims Hop 1 before the 2h timelock expires
+    let bob_claimed = client.claim_htlc(&bob, &leg1, &revealed_secret);
+    assert_eq!(bob_claimed, 100_000_000);
+
+    // Both legs are settled symmetrically
+    assert_eq!(client.get_htlc(&leg1).unwrap().status, HtlcStatus::Claimed);
+    assert_eq!(client.get_htlc(&leg2).unwrap().status, HtlcStatus::Claimed);
+}
