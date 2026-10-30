@@ -134,6 +134,23 @@ impl EscrowVault {
         Ok(false)
     }
 
+    /// Flag escrow into dispute mode (Buyer or Seller).
+    pub fn raise_dispute(env: Env, caller: Address, escrow_id: u64) -> Result<(), EscrowError> {
+        caller.require_auth();
+        let mut esc = storage::get_escrow(&env, escrow_id).ok_or(EscrowError::EscrowNotFound)?;
+        if esc.status != EscrowStatus::Funded {
+            return Err(EscrowError::EscrowNotActive);
+        }
+        if caller != esc.buyer && caller != esc.seller {
+            return Err(EscrowError::Unauthorized);
+        }
+        esc.status = EscrowStatus::Disputed;
+        storage::set_escrow(&env, escrow_id, &esc);
+        events::emit_escrow_status(&env, escrow_id, EscrowStatus::Disputed);
+        storage::extend_escrow_ttl(&env, escrow_id);
+        Ok(())
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("escrow_ok")
     }
