@@ -135,3 +135,11 @@ pub fn set_settlement_dispute(env: &Env, id: u64, dispute: &crate::types::Settle
 pub fn get_settlement_dispute(env: &Env, id: u64) -> Option<crate::types::SettlementDispute> {
     env.storage().persistent().get(&DataKey::DisputeRecord(id))
 }
+
+pub fn set_arbitrator(env: &Env, arbitrator: &Address) {
+    env.storage().instance().set(&DataKey::Arbitrator, arbitrator);
+}
+
+pub fn get_arbitrator(env: &Env) -> Option<Address> {
+    env.storage().instance().get(&DataKey::Arbitrator)
+}
