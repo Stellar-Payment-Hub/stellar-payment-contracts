@@ -255,3 +255,47 @@ fn test_split_bill_weighted_proportions_and_remainder() {
     assert_eq!(odd_recs.get(1).unwrap().amount, 33);
     assert_eq!(odd_recs.get(2).unwrap().amount, 34); // remainder captured safely
 }
+
+#[test]
+fn test_treasury_pause_and_refund_lifecycle() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let registry_id = env.register(PaymentRegistry, ());
+    let contract_id = env.register(SettlementRouter, ());
+    let client = SettlementRouterClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
+    client.initialize(&admin, &registry_id);
+
+    // Set treasury and fee config
+    client.set_treasury(&admin, &treasury);
+    assert_eq!(client.get_treasury(), Some(treasury));
+
+    client.set_fee_config(&admin, &50, &500, &true);
+    let fee_cfg = client.get_fee_config().unwrap();
+    assert_eq!(fee_cfg.fee_bps, 50);
+    assert_eq!(fee_cfg.enabled, true);
+
+    // Test pause
+    client.pause(&admin);
+    assert_eq!(client.is_paused(), true);
+
+    let payer = Address::generate(&env);
+    let r1 = Address::generate(&env);
+    let mut shares = Vec::new(&env);
+    shares.push_back(RecipientShare { recipient: r1, amount: 5000 });
+    let memo = String::from_str(&env, "Paused test");
+
+    // Unpause
+    client.unpause(&admin);
+    assert_eq!(client.is_paused(), false);
+
+    // Create and refund settlement
+    let settle_id = client.create_settlement(&payer, &shares, &memo);
+    client.refund_settlement(&settle_id, &payer);
+
+    let record = client.get_settlement(&settle_id);
+    assert_eq!(record.status, SettlementStatus::Cancelled);
+}
