@@ -320,6 +320,11 @@ impl SettlementRouter {
         storage::get_min_threshold(&env)
     }
 
+    /// Read lifetime settled volume across all completed settlements.
+    pub fn get_total_volume(env: Env) -> i128 {
+        storage::get_total_volume(&env)
+    }
+
     /// Pause router operations (Admin only).
     pub fn pause(env: Env, admin: Address) -> Result<(), SettlementError> {
         admin.require_auth();
@@ -454,6 +459,7 @@ impl SettlementRouter {
 
         storage::set_settlement(&env, settlement_id, &record);
 
+        storage::add_settled_volume(&env, record.total_amount);
         events::emit_settlement_completed(
             &env,
             settlement_id,

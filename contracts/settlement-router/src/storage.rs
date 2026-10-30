@@ -151,3 +151,12 @@ pub fn set_min_threshold(env: &Env, min: i128) {
 pub fn get_min_threshold(env: &Env) -> i128 {
     env.storage().instance().get(&DataKey::MinSettlementThreshold).unwrap_or(1)
 }
+
+pub fn get_total_volume(env: &Env) -> i128 {
+    env.storage().instance().get(&DataKey::TotalVolumeSettled).unwrap_or(0)
+}
+
+pub fn add_settled_volume(env: &Env, amount: i128) {
+    let next = get_total_volume(env) + amount;
+    env.storage().instance().set(&DataKey::TotalVolumeSettled, &next);
+}
