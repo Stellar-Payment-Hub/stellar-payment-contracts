@@ -263,6 +263,42 @@ impl SettlementRouter {
         storage::get_settlement_dispute(&env, settlement_id).ok_or(SettlementError::SettlementNotFound)
     }
 
+    /// Attach a conditional timelock to a created settlement.
+    pub fn attach_timelock(
+        env: Env,
+        caller: Address,
+        settlement_id: u64,
+        release_after: u64,
+        auto_refund_after: u64,
+    ) -> Result<(), SettlementError> {
+        caller.require_auth();
+
+        let record = storage::get_settlement(&env, settlement_id)
+            .ok_or(SettlementError::SettlementNotFound)?;
+
+        if record.payer != caller {
+            return Err(SettlementError::Unauthorized);
+        }
+        if record.status != SettlementStatus::Created {
+            return Err(SettlementError::InvalidStatusTransition);
+        }
+
+        let now = env.ledger().timestamp();
+        if release_after < now || auto_refund_after <= release_after {
+            return Err(SettlementError::DeadlineExpired);
+        }
+
+        let timelock = EscrowTimelock { release_after, auto_refund_after };
+        storage::set_timelock(&env, settlement_id, &timelock);
+        storage::extend_settlement_ttl(&env, settlement_id);
+        Ok(())
+    }
+
+    /// Read timelock parameters for a settlement.
+    pub fn get_timelock(env: Env, settlement_id: u64) -> Result<EscrowTimelock, SettlementError> {
+        storage::get_timelock(&env, settlement_id).ok_or(SettlementError::SettlementNotFound)
+    }
+
     /// Pause router operations (Admin only).
     pub fn pause(env: Env, admin: Address) -> Result<(), SettlementError> {
         admin.require_auth();
@@ -334,6 +370,17 @@ impl SettlementRouter {
         }
         if storage::is_reentrancy_locked(&env) {
             return Err(SettlementError::ReentrancyGuard);
+        }
+        if let Some(lock) = storage::get_timelock(&env, settlement_id) {
+            let now = env.ledger().timestamp();
+            if now < lock.release_after {
+                return Err(SettlementError::DeadlineNotPassed);
+            }
+        }
+        if let Some(dispute) = storage::get_settlement_dispute(&env, settlement_id) {
+            if dispute.verdict == DisputeVerdict::Pending {
+                return Err(SettlementError::DisputeActive);
+            }
         }
         storage::set_reentrancy_lock(&env, true);
         caller.require_auth();
