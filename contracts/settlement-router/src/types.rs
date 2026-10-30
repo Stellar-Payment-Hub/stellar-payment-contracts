@@ -103,3 +103,25 @@ pub enum AssetKind {
     ClassicWrapped = 1,
     CustomSorobanToken = 2,
 }
+
+
+/// Configuration for whitelisted tokens in settlement router
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TokenConfig {
+    pub address: Address,
+    pub min_deposit: i128,
+    pub max_deposit: i128,
+    pub enabled: bool,
+    pub decimals: u32,
+}
+
+/// Protocol fee accumulation record per token
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TokenFeeRecord {
+    pub token: Address,
+    pub total_collected: i128,
+    pub total_withdrawn: i128,
+    pub last_withdrawn_at: u64,
+}
