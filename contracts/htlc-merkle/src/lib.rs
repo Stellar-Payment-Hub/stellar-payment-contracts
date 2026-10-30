@@ -74,6 +74,44 @@ impl HtlcMerkleVault {
         storage::get_htlc(&env, id)
     }
 
+    /// Claim HTLC tokens by providing the 32-byte SHA-256 preimage before timelock expiry.
+    pub fn claim_htlc(
+        env: Env,
+        recipient: Address,
+        id: u64,
+        preimage: BytesN<32>,
+    ) -> Result<i128, HtlcError> {
+        recipient.require_auth();
+        let mut record = storage::get_htlc(&env, id).ok_or(HtlcError::HtlcNotFound)?;
+        if record.recipient != recipient {
+            return Err(HtlcError::Unauthorized);
+        }
+        if record.status != HtlcStatus::Active {
+            return Err(HtlcError::HtlcNotActive);
+        }
+
+        let now = env.ledger().timestamp();
+        if now >= record.timelock {
+            return Err(HtlcError::TimelockExpired);
+        }
+
+        // Compute SHA-256 of candidate preimage using Soroban crypto
+        let mut preimage_bytes = Bytes::new(&env);
+        preimage_bytes.append(&preimage.clone().into());
+        let calculated_hash = env.crypto().sha256(&preimage_bytes);
+
+        if calculated_hash != record.hashlock {
+            return Err(HtlcError::InvalidPreimage);
+        }
+
+        record.status = HtlcStatus::Claimed;
+        record.preimage = Some(preimage.clone());
+        storage::set_htlc(&env, id, &record);
+        events::emit_htlc_claimed(&env, id, &recipient, &preimage);
+        storage::extend_htlc_ttl(&env, id);
+        Ok(record.amount)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("htlc_ok")
     }
