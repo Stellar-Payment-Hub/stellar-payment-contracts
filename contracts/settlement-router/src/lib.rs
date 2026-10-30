@@ -161,6 +161,37 @@ impl SettlementRouter {
         symbol_short!("settle_ok")
     }
 
+    /// Pause router operations (Admin only).
+    pub fn pause(env: Env, admin: Address) -> Result<(), SettlementError> {
+        admin.require_auth();
+        let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
+        if admin != current_admin {
+            return Err(SettlementError::Unauthorized);
+        }
+        storage::set_paused(&env, true);
+        events::emit_router_paused(&env, &admin, true);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// Unpause router operations (Admin only).
+    pub fn unpause(env: Env, admin: Address) -> Result<(), SettlementError> {
+        admin.require_auth();
+        let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
+        if admin != current_admin {
+            return Err(SettlementError::Unauthorized);
+        }
+        storage::set_paused(&env, false);
+        events::emit_router_paused(&env, &admin, false);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// Check if router is currently paused.
+    pub fn is_paused(env: Env) -> bool {
+        storage::is_paused(&env)
+    }
+
     /// Upgrade router contract code to new WASM hash (Admin only).
     pub fn upgrade(env: Env, admin: Address, new_wasm_hash: BytesN<32>) -> Result<(), SettlementError> {
         admin.require_auth();

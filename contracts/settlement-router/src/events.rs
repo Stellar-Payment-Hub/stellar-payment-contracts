@@ -55,3 +55,8 @@ pub fn emit_router_upgraded(env: &Env, admin: &Address, new_wasm_hash: &soroban_
     let topics = (soroban_sdk::symbol_short!("router"), soroban_sdk::symbol_short!("upgraded"));
     env.events().publish(topics, (admin.clone(), new_wasm_hash.clone()));
 }
+
+pub fn emit_router_paused(env: &Env, admin: &Address, paused: bool) {
+    let topics = (soroban_sdk::symbol_short!("circuit"), soroban_sdk::symbol_short!("pause"));
+    env.events().publish(topics, (admin.clone(), paused));
+}
