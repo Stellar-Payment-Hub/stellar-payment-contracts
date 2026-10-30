@@ -142,6 +142,38 @@ impl HtlcMerkleVault {
         env.crypto().sha256(&b)
     }
 
+    /// Register a compressed Merkle distribution root for batch disbursements.
+    pub fn register_merkle_dist(
+        env: Env,
+        distributor: Address,
+        token: Address,
+        root: BytesN<32>,
+        total_amount: i128,
+        duration_seconds: u64,
+    ) -> Result<u64, HtlcError> {
+        distributor.require_auth();
+        if total_amount <= 0 {
+            return Err(HtlcError::InvalidAmount);
+        }
+        let now = env.ledger().timestamp();
+        let expires_at = now + duration_seconds;
+        let id = storage::increment_dist_count(&env);
+
+        let dist = MerkleDistribution {
+            id,
+            distributor,
+            token,
+            root,
+            total_amount,
+            remaining_amount: total_amount,
+            expires_at,
+            claims_count: 0,
+        };
+        storage::set_dist(&env, id, &dist);
+        env.storage().persistent().extend_ttl(&storage::DataKey::Distribution(id), 50_000, 100_000);
+        Ok(id)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("htlc_ok")
     }
