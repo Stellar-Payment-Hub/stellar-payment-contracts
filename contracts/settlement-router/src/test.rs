@@ -4,7 +4,7 @@ extern crate std;
 use super::*;
 use payment_registry::{PaymentRegistry, PaymentRegistryClient as RegClient};
 use soroban_sdk::{
-    testutils::Address as _,
+    testutils::{Address as _, Ledger as _},
     Address, Env, String, Vec,
 };
 
@@ -298,4 +298,43 @@ fn test_treasury_pause_and_refund_lifecycle() {
 
     let record = client.get_settlement(&settle_id);
     assert_eq!(record.status, SettlementStatus::Cancelled);
+}
+
+#[test]
+fn test_timelock_release_and_deadline_enforcement() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let registry_id = env.register(PaymentRegistry, ());
+    let contract_id = env.register(SettlementRouter, ());
+    let client = SettlementRouterClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    client.initialize(&admin, &registry_id);
+
+    let payer = Address::generate(&env);
+    let r1 = Address::generate(&env);
+    let mut shares = Vec::new(&env);
+    shares.push_back(RecipientShare { recipient: r1, amount: 100_000 });
+
+    let memo = String::from_str(&env, "Timelocked Escrow");
+    let settle_id = client.create_settlement(&payer, &shares, &memo);
+
+    let now = env.ledger().timestamp();
+    let release_after = now + 500;
+    let refund_after = now + 2000;
+
+    // Attach timelock
+    client.attach_timelock(&payer, &settle_id, &release_after, &refund_after);
+    let lock = client.get_timelock(&settle_id);
+    assert_eq!(lock.release_after, release_after);
+
+    // Attempting execution before release_after should fail with DeadlineNotPassed
+    let err = client.try_execute_settlement(&settle_id, &payer);
+    assert_eq!(err, Err(Ok(SettlementError::DeadlineNotPassed)));
+
+    // Fast-forward past release_after
+    env.ledger().set_timestamp(release_after + 1);
+    let ok = client.execute_settlement(&settle_id, &payer);
+    assert_eq!(ok, settle_id);
 }
