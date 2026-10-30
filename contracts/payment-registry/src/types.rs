@@ -1,4 +1,15 @@
-use soroban_sdk::{contracttype, Address, String};
+use soroban_sdk::{contracttype, Address, BytesN, String};
+
+/// Granular protocol actor roles for access control
+#[contracttype]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum Role {
+    Admin = 1,
+    Operator = 2,
+    Arbitrator = 3,
+    Treasury = 4,
+}
 
 #[contracttype]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
