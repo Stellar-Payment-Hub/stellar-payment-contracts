@@ -338,3 +338,46 @@ fn test_timelock_release_and_deadline_enforcement() {
     let ok = client.execute_settlement(&settle_id, &payer);
     assert_eq!(ok, settle_id);
 }
+
+#[test]
+fn test_dispute_initiation_and_arbitrator_resolution() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let registry_id = env.register(PaymentRegistry, ());
+    let contract_id = env.register(SettlementRouter, ());
+    let client = SettlementRouterClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    let arbitrator = Address::generate(&env);
+    client.initialize(&admin, &registry_id);
+    client.set_arbitrator(&admin, &arbitrator);
+
+    let payer = Address::generate(&env);
+    let r1 = Address::generate(&env);
+    let mut shares = Vec::new(&env);
+    shares.push_back(RecipientShare { recipient: r1, amount: 50_000 });
+
+    let memo = String::from_str(&env, "Contested Order");
+    let settle_id = client.create_settlement(&payer, &shares, &memo);
+
+    // Raise dispute
+    let evidence_hash = BytesN::from_array(&env, &[7u8; 32]);
+    client.raise_dispute(&payer, &settle_id, &evidence_hash);
+
+    let dispute = client.get_dispute(&settle_id);
+    assert_eq!(dispute.verdict, DisputeVerdict::Pending);
+    assert_eq!(dispute.evidence_hash, evidence_hash);
+
+    // Execution while dispute is active must be rejected
+    let err = client.try_execute_settlement(&settle_id, &payer);
+    assert_eq!(err, Err(Ok(SettlementError::DisputeActive)));
+
+    // Arbitrator resolves with refund
+    client.resolve_dispute(&arbitrator, &settle_id, &DisputeVerdict::RefundPayer);
+    let resolved = client.get_dispute(&settle_id);
+    assert_eq!(resolved.verdict, DisputeVerdict::RefundPayer);
+
+    let record = client.get_settlement(&settle_id);
+    assert_eq!(record.status, SettlementStatus::Cancelled);
+}
