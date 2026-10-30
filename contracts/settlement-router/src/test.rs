@@ -537,3 +537,30 @@ fn test_dynamic_fee_tier_progression() {
     let vip_fee = router_client.calculate_dynamic_fee(&payer, &100_000_000);
     assert_eq!(vip_fee, 100_000);
 }
+
+
+#[test]
+fn test_ecosystem_interoperability_full_cycle() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let reg_contract_id = env.register(payment_registry::PaymentRegistry, ());
+    let router_contract_id = env.register(SettlementRouter, ());
+    let router_client = SettlementRouterClient::new(&env, &router_contract_id);
+    router_client.initialize(&admin, &reg_contract_id);
+
+    let payer = Address::generate(&env);
+    let r1 = Address::generate(&env);
+    let r2 = Address::generate(&env);
+    let mut recipients = Vec::new(&env);
+    recipients.push_back(r1);
+    recipients.push_back(r2);
+
+    let memo = String::from_str(&env, "Batch 6 Certification");
+    let settle_id = router_client.split_bill(&payer, &100_000_000, &recipients, &memo);
+    assert_eq!(settle_id, 1);
+
+    let audit = router_client.export_settlement_audit(&settle_id);
+    assert!(audit.is_some());
+}
