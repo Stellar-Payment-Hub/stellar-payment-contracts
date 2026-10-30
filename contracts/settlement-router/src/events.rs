@@ -91,3 +91,9 @@ pub fn emit_fee_withdrawn(env: &Env, token: &Address, recipient: &Address, amoun
     let topics = (soroban_sdk::symbol_short!("fee_wd"), token.clone(), recipient.clone());
     env.events().publish(topics, amount);
 }
+
+
+pub fn emit_dynamic_tier_applied(env: &Env, payer: &Address, tier: u32, fee_charged: i128) {
+    let topics = (soroban_sdk::symbol_short!("tier"), payer.clone());
+    env.events().publish(topics, (tier, fee_charged));
+}
