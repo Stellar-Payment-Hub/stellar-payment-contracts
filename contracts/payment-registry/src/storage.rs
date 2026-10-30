@@ -91,3 +91,13 @@ pub fn is_reentrancy_locked(env: &Env) -> bool {
 pub fn set_reentrancy_lock(env: &Env, locked: bool) {
     env.storage().instance().set(&DataKey::ReentrancyLocked, &locked);
 }
+
+pub fn get_nonce(env: &Env, account: &Address) -> u64 {
+    env.storage().instance().get(&DataKey::Nonce(account.clone())).unwrap_or(0)
+}
+
+pub fn increment_nonce(env: &Env, account: &Address) -> u64 {
+    let next = get_nonce(env, account) + 1;
+    env.storage().instance().set(&DataKey::Nonce(account.clone()), &next);
+    next
+}
