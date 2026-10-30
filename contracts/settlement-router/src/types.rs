@@ -42,3 +42,11 @@ pub struct SettlementRecord {
     pub created_at: u64,
     pub updated_at: u64,
 }
+
+/// Weighted split parameter specifying fractional share by relative weight
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WeightedShare {
+    pub recipient: Address,
+    pub weight: u32,
+}
