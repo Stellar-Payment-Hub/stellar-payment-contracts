@@ -99,6 +99,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "category"
+                      },
+                      "val": {
+                        "u32": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "created_at"
                       },
                       "val": {
@@ -112,6 +120,12 @@
                       "val": {
                         "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
                       }
+                    },
+                    {
+                      "key": {
+                        "symbol": "deadline"
+                      },
+                      "val": "void"
                     },
                     {
                       "key": {
@@ -131,6 +145,12 @@
                     },
                     {
                       "key": {
+                        "symbol": "memo_hash"
+                      },
+                      "val": "void"
+                    },
+                    {
+                      "key": {
                         "symbol": "recipient"
                       },
                       "val": {
@@ -147,6 +167,12 @@
                     },
                     {
                       "key": {
+                        "symbol": "token"
+                      },
+                      "val": "void"
+                    },
+                    {
+                      "key": {
                         "symbol": "updated_at"
                       },
                       "val": {
@@ -159,7 +185,7 @@
             },
             "ext": "v0"
           },
-          4095
+          120960
         ]
       ],
       [
@@ -204,7 +230,7 @@
             },
             "ext": "v0"
           },
-          4095
+          120960
         ]
       ],
       [
@@ -258,7 +284,7 @@
             },
             "ext": "v0"
           },
-          4095
+          120960
         ]
       ]
     ]

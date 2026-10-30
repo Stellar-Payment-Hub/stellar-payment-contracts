@@ -7,8 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  test:
-    name: Build & Test Contracts
+  contracts-test:
+    name: Build & Test Soroban Contracts
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -23,11 +23,14 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Cargo Check
-        run: cargo check --all-targets
+      - name: Format Check
+        run: cargo fmt --all -- --check
 
-      - name: Run Tests
-        run: cargo test
+      - name: Clippy Linter
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Run Contract Tests
+        run: cargo test --all
 
       - name: Build WASM Target
         run: cargo build --target wasm32-unknown-unknown --release
