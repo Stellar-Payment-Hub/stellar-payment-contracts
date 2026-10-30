@@ -5,9 +5,15 @@ use crate::types::{RecipientShare, SettlementRecord};
 pub enum DataKey {
     Admin,
     RegistryContract,
+    TreasuryAccount,
+    FeeConfiguration,
     SettlementCounter,
     Settlement(u64),
     Recipients(u64),
+    Paused,
+    ReentrancyLocked,
+    DisputeRecord(u64),
+    MilestoneRecord(u64, u32),
 }
 
 pub fn set_admin(env: &Env, admin: &Address) {
@@ -50,4 +56,21 @@ pub fn set_recipients(env: &Env, id: u64, recipients: &Vec<RecipientShare>) {
 
 pub fn get_recipients(env: &Env, id: u64) -> Option<Vec<RecipientShare>> {
     env.storage().persistent().get(&DataKey::Recipients(id))
+}
+
+
+pub fn set_treasury(env: &Env, treasury: &Address) {
+    env.storage().instance().set(&DataKey::TreasuryAccount, treasury);
+}
+
+pub fn get_treasury(env: &Env) -> Option<Address> {
+    env.storage().instance().get(&DataKey::TreasuryAccount)
+}
+
+pub fn set_fee_config(env: &Env, config: &crate::types::FeeConfig) {
+    env.storage().instance().set(&DataKey::FeeConfiguration, config);
+}
+
+pub fn get_fee_config(env: &Env) -> Option<crate::types::FeeConfig> {
+    env.storage().instance().get(&DataKey::FeeConfiguration)
 }
