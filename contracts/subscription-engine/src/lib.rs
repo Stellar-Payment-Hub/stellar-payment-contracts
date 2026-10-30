@@ -111,6 +111,17 @@ impl SubscriptionEngine {
         storage::get_subscription(&env, id)
     }
 
+    /// Check if a subscription is currently due for recurring billing.
+    pub fn is_charge_due(env: Env, sub_id: u64) -> bool {
+        if let Some(sub) = storage::get_subscription(&env, sub_id) {
+            if sub.status == SubscriptionStatus::Active {
+                let now = env.ledger().timestamp();
+                return now >= sub.next_bill_at && (sub.max_cycles == 0 || sub.cycles_billed < sub.max_cycles);
+            }
+        }
+        false
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("sub_ok")
     }
