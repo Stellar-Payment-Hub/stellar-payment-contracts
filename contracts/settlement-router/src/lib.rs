@@ -163,6 +163,11 @@ impl SettlementRouter {
         symbol_short!("settle_ok")
     }
 
+    /// Read settlement count in storage.
+    pub fn get_settlement_count(env: Env) -> u64 {
+        storage::get_counter(&env)
+    }
+
     /// Set designated arbitrator address (Admin only).
     pub fn set_arbitrator(env: Env, admin: Address, arbitrator: Address) -> Result<(), SettlementError> {
         admin.require_auth();
