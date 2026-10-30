@@ -299,6 +299,14 @@ impl SettlementRouter {
         Ok(())
     }
 
+    /// Slippage protection assertion verifying received amount satisfies user bounds.
+    pub fn assert_minimum_received(env: Env, actual: i128, min_expected: i128) -> Result<(), SettlementError> {
+        if actual < min_expected {
+            return Err(SettlementError::InvalidTotalAmount);
+        }
+        Ok(())
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("settle_ok")
     }
