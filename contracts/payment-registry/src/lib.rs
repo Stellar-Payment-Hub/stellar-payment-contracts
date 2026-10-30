@@ -88,6 +88,18 @@ impl PaymentRegistry {
         storage::is_paused(&env)
     }
 
+    /// Upgrade contract code to a new deployed WASM hash (Admin only).
+    pub fn upgrade(env: Env, admin: Address, new_wasm_hash: BytesN<32>) -> Result<(), ContractError> {
+        admin.require_auth();
+        let current_admin = storage::get_admin(&env).ok_or(ContractError::Unauthorized)?;
+        if admin != current_admin {
+            return Err(ContractError::Unauthorized);
+        }
+        env.deployer().update_current_contract_wasm(new_wasm_hash.clone());
+        events::emit_contract_upgraded(&env, &admin, &new_wasm_hash);
+        Ok(())
+    }
+
     /// Read contract status and availability.
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("ready")

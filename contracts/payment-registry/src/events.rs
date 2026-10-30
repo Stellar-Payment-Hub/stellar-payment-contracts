@@ -41,3 +41,8 @@ pub fn emit_pause_toggled(env: &Env, paused: bool, caller: &Address) {
     let topics = (soroban_sdk::symbol_short!("circuit"), soroban_sdk::symbol_short!("pause"));
     env.events().publish(topics, (paused, caller.clone()));
 }
+
+pub fn emit_contract_upgraded(env: &Env, admin: &Address, new_wasm_hash: &soroban_sdk::BytesN<32>) {
+    let topics = (soroban_sdk::symbol_short!("contract"), soroban_sdk::symbol_short!("upgraded"));
+    env.events().publish(topics, (admin.clone(), new_wasm_hash.clone()));
+}
