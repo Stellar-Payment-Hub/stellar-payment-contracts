@@ -184,6 +184,58 @@ impl HtlcMerkleVault {
         storage::is_leaf_claimed(&env, dist_id, index)
     }
 
+    /// Claim tokens from Merkle distribution using cryptographic proof.
+    pub fn claim_merkle_leaf(
+        env: Env,
+        recipient: Address,
+        dist_id: u64,
+        index: u32,
+        amount: i128,
+        proof: Vec<BytesN<32>>,
+    ) -> Result<i128, HtlcError> {
+        recipient.require_auth();
+        let mut dist = storage::get_dist(&env, dist_id).ok_or(HtlcError::DistributionNotFound)?;
+        let now = env.ledger().timestamp();
+        if now >= dist.expires_at {
+            return Err(HtlcError::DistributionExpired);
+        }
+        if storage::is_leaf_claimed(&env, dist_id, index) {
+            return Err(HtlcError::LeafAlreadyClaimed);
+        }
+
+        // Compute leaf hash = sha256(index || amount)
+        let mut leaf_bytes = Bytes::new(&env);
+        leaf_bytes.append(&Bytes::from_slice(&env, &index.to_be_bytes()));
+        leaf_bytes.append(&Bytes::from_slice(&env, &amount.to_be_bytes()));
+        let mut current_hash = env.crypto().sha256(&leaf_bytes);
+
+        // Verify merkle proof
+        let proof_len = proof.len();
+        for i in 0..proof_len {
+            let sibling = proof.get(i).unwrap();
+            let mut combined = Bytes::new(&env);
+            if current_hash < sibling {
+                combined.append(&current_hash.into());
+                combined.append(&sibling.into());
+            } else {
+                combined.append(&sibling.into());
+                combined.append(&current_hash.into());
+            }
+            current_hash = env.crypto().sha256(&combined);
+        }
+
+        if current_hash != dist.root {
+            return Err(HtlcError::InvalidProof);
+        }
+
+        storage::set_leaf_claimed(&env, dist_id, index);
+        dist.remaining_amount -= amount;
+        dist.claims_count += 1;
+        storage::set_dist(&env, dist_id, &dist);
+        events::emit_merkle_claimed(&env, dist_id, index, &recipient, amount);
+        Ok(amount)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("htlc_ok")
     }
