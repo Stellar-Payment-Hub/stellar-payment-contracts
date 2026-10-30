@@ -453,3 +453,31 @@ fn test_min_threshold_and_total_volume_tracking() {
     // Verify lifetime volume was tracked
     assert_eq!(client.get_total_volume(), 50_000);
 }
+
+
+#[test]
+fn test_token_whitelist_and_fee_calculation() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let reg_contract_id = env.register(PaymentRegistry, ());
+    let router_contract_id = env.register(SettlementRouter, ());
+    let router_client = SettlementRouterClient::new(&env, &router_contract_id);
+    router_client.initialize(&admin, &reg_contract_id);
+
+    let token = Address::generate(&env);
+    assert_eq!(router_client.is_token_whitelisted(&token), false);
+
+    router_client.set_token_whitelist(&admin, &token, &true, &10_000_000, &1_000_000_000, &7);
+    assert_eq!(router_client.is_token_whitelisted(&token), true);
+
+    let config = router_client.get_token_config(&token).unwrap();
+    assert_eq!(config.min_deposit, 10_000_000);
+    assert_eq!(config.decimals, 7);
+
+    // Test fee calculation (50 bps = 0.5%)
+    router_client.set_fee_config(&admin, &50, &500, &true);
+    let fee = router_client.calculate_fee_amount(&100_000_000);
+    assert_eq!(fee, 500_000);
+}
