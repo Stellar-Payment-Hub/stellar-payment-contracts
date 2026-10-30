@@ -18,6 +18,9 @@ pub enum DataKey {
     Arbitrator,
     MinSettlementThreshold,
     TotalVolumeSettled,
+    TokenWhitelist(Address),
+    TokenFees(Address),
+    TokenPaused,
 }
 
 pub fn set_admin(env: &Env, admin: &Address) {
@@ -159,4 +162,40 @@ pub fn get_total_volume(env: &Env) -> i128 {
 pub fn add_settled_volume(env: &Env, amount: i128) {
     let next = get_total_volume(env) + amount;
     env.storage().instance().set(&DataKey::TotalVolumeSettled, &next);
+}
+
+
+use crate::types::{TokenConfig, TokenFeeRecord};
+
+pub fn set_token_whitelist(env: &Env, token: &Address, config: &TokenConfig) {
+    env.storage().persistent().set(&DataKey::TokenWhitelist(token.clone()), config);
+}
+
+pub fn get_token_config(env: &Env, token: &Address) -> Option<TokenConfig> {
+    env.storage().persistent().get(&DataKey::TokenWhitelist(token.clone()))
+}
+
+pub fn is_token_whitelisted(env: &Env, token: &Address) -> bool {
+    get_token_config(env, token).map(|c| c.enabled).unwrap_or(false)
+}
+
+pub fn set_token_paused(env: &Env, paused: bool) {
+    env.storage().instance().set(&DataKey::TokenPaused, &paused);
+}
+
+pub fn is_token_paused(env: &Env) -> bool {
+    env.storage().instance().get(&DataKey::TokenPaused).unwrap_or(false)
+}
+
+pub fn get_token_fees(env: &Env, token: &Address) -> TokenFeeRecord {
+    env.storage().persistent().get(&DataKey::TokenFees(token.clone())).unwrap_or(TokenFeeRecord {
+        token: token.clone(),
+        total_collected: 0,
+        total_withdrawn: 0,
+        last_withdrawn_at: 0,
+    })
+}
+
+pub fn set_token_fees(env: &Env, token: &Address, record: &TokenFeeRecord) {
+    env.storage().persistent().set(&DataKey::TokenFees(token.clone()), record);
 }
