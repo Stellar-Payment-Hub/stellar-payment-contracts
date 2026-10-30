@@ -270,6 +270,33 @@ impl EscrowVault {
         Ok(())
     }
 
+    /// Approve milestone and release proportional funds to seller (Buyer only).
+    pub fn approve_milestone(
+        env: Env,
+        buyer: Address,
+        escrow_id: u64,
+        index: u32,
+    ) -> Result<i128, EscrowError> {
+        buyer.require_auth();
+        let mut esc = storage::get_escrow(&env, escrow_id).ok_or(EscrowError::EscrowNotFound)?;
+        if esc.buyer != buyer {
+            return Err(EscrowError::Unauthorized);
+        }
+        let mut ms = storage::get_milestone(&env, escrow_id, index).ok_or(EscrowError::MilestoneNotFound)?;
+        if ms.approved {
+            return Err(EscrowError::MilestoneAlreadyApproved);
+        }
+        ms.approved = true;
+        esc.remaining_amount -= ms.amount;
+        if esc.remaining_amount == 0 {
+            esc.status = EscrowStatus::Released;
+        }
+        storage::set_milestone(&env, escrow_id, index, &ms);
+        storage::set_escrow(&env, escrow_id, &esc);
+        storage::extend_escrow_ttl(&env, escrow_id);
+        Ok(ms.amount)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("escrow_ok")
     }
