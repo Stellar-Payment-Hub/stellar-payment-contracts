@@ -107,6 +107,33 @@ impl EscrowVault {
         Ok(false)
     }
 
+    /// Cast vote to refund funds to buyer (Seller or Arbitrator).
+    pub fn vote_refund(env: Env, caller: Address, escrow_id: u64) -> Result<bool, EscrowError> {
+        caller.require_auth();
+        let mut esc = storage::get_escrow(&env, escrow_id).ok_or(EscrowError::EscrowNotFound)?;
+        if esc.status != EscrowStatus::Funded && esc.status != EscrowStatus::Disputed {
+            return Err(EscrowError::EscrowNotActive);
+        }
+        if caller != esc.seller && caller != esc.arbitrator {
+            return Err(EscrowError::Unauthorized);
+        }
+
+        storage::set_vote(&env, escrow_id, &caller, VoteDecision::RefundToBuyer);
+        events::emit_vote_cast(&env, escrow_id, &caller, VoteDecision::RefundToBuyer as u32);
+
+        let seller_vote = storage::get_vote(&env, escrow_id, &esc.seller);
+        let arb_vote = storage::get_vote(&env, escrow_id, &esc.arbitrator);
+
+        if seller_vote == VoteDecision::RefundToBuyer || (arb_vote == VoteDecision::RefundToBuyer && caller == esc.arbitrator) {
+            esc.status = EscrowStatus::Refunded;
+            esc.remaining_amount = 0;
+            storage::set_escrow(&env, escrow_id, &esc);
+            events::emit_escrow_status(&env, escrow_id, EscrowStatus::Refunded);
+            return Ok(true);
+        }
+        Ok(false)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("escrow_ok")
     }
