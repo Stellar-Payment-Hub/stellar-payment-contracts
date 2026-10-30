@@ -210,3 +210,48 @@ fn test_unauthorized_execution_rejected() {
     assert!(res.is_err());
 }
 
+
+#[test]
+fn test_split_bill_weighted_proportions_and_remainder() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let registry_id = env.register(PaymentRegistry, ());
+    let contract_id = env.register(SettlementRouter, ());
+    let client = SettlementRouterClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    client.initialize(&admin, &registry_id);
+
+    let payer = Address::generate(&env);
+    let r1 = Address::generate(&env);
+    let r2 = Address::generate(&env);
+    let r3 = Address::generate(&env);
+
+    // Split 100 Stroops with weights 50, 30, 20
+    let mut shares = Vec::new(&env);
+    shares.push_back(WeightedShare { recipient: r1.clone(), weight: 50 });
+    shares.push_back(WeightedShare { recipient: r2.clone(), weight: 30 });
+    shares.push_back(WeightedShare { recipient: r3.clone(), weight: 20 });
+
+    let memo = String::from_str(&env, "Weighted Split 50/30/20");
+    let settle_id = client.split_bill_weighted(&payer, &100, &shares, &memo);
+
+    let recs = client.get_recipients(&settle_id);
+    assert_eq!(recs.len(), 3);
+    assert_eq!(recs.get(0).unwrap().amount, 50);
+    assert_eq!(recs.get(1).unwrap().amount, 30);
+    assert_eq!(recs.get(2).unwrap().amount, 20);
+
+    // Odd amount test: 100 Stroops with 3 equal weights 1:1:1
+    let mut odd_shares = Vec::new(&env);
+    odd_shares.push_back(WeightedShare { recipient: r1, weight: 1 });
+    odd_shares.push_back(WeightedShare { recipient: r2, weight: 1 });
+    odd_shares.push_back(WeightedShare { recipient: r3, weight: 1 });
+
+    let odd_id = client.split_bill_weighted(&payer, &100, &odd_shares, &memo);
+    let odd_recs = client.get_recipients(&odd_id);
+    assert_eq!(odd_recs.get(0).unwrap().amount, 33);
+    assert_eq!(odd_recs.get(1).unwrap().amount, 33);
+    assert_eq!(odd_recs.get(2).unwrap().amount, 34); // remainder captured safely
+}
