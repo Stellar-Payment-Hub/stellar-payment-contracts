@@ -250,6 +250,35 @@ impl SubscriptionEngine {
         storage::get_merchant_mrr(&env, &merchant)
     }
 
+    /// Pause all contract recurring debits (Admin only).
+    pub fn pause(env: Env, admin: Address) -> Result<(), SubscriptionError> {
+        admin.require_auth();
+        let cur_admin = storage::get_admin(&env).ok_or(SubscriptionError::Unauthorized)?;
+        if admin != cur_admin {
+            return Err(SubscriptionError::Unauthorized);
+        }
+        storage::set_paused(&env, true);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// Unpause contract recurring debits (Admin only).
+    pub fn unpause(env: Env, admin: Address) -> Result<(), SubscriptionError> {
+        admin.require_auth();
+        let cur_admin = storage::get_admin(&env).ok_or(SubscriptionError::Unauthorized)?;
+        if admin != cur_admin {
+            return Err(SubscriptionError::Unauthorized);
+        }
+        storage::set_paused(&env, false);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// Check whether contract is paused.
+    pub fn is_paused(env: Env) -> bool {
+        storage::is_paused(&env)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("sub_ok")
     }
