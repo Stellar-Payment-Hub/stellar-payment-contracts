@@ -225,3 +225,8 @@ pub fn set_vip_discount(env: &Env, partner: &Address, discount_bps: u32) {
 pub fn get_vip_discount(env: &Env, partner: &Address) -> Option<u32> {
     env.storage().persistent().get(&DataKey::VipDiscount(partner.clone()))
 }
+
+pub fn bump_transient_records(env: &Env, id: u64) {
+    env.storage().instance().extend_ttl(50_000, 100_000);
+    env.storage().persistent().extend_ttl(&DataKey::Settlement(id), 50_000, 100_000);
+}
