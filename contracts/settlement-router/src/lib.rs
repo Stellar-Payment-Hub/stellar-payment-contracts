@@ -168,7 +168,7 @@ impl SettlementRouter {
         if admin != current_admin {
             return Err(SettlementError::Unauthorized);
         }
-        if fee_bps > max_fee_bps || max_fee_bps > 1000 { // Max 10%
+        if fee_bps > max_fee_bps || max_fee_bps > 500 { // Enforce max 5% fee cap
             return Err(SettlementError::InvalidFeeBps);
         }
         let config = FeeConfig { fee_bps, max_fee_bps, enabled };
