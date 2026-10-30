@@ -34,9 +34,12 @@ pub struct RecipientShare {
 pub struct SettlementRecord {
     pub id: u64,
     pub payer: Address,
+    pub token: Option<Address>,
     pub total_amount: i128,
+    pub fee_amount: i128,
     pub recipient_count: u32,
     pub memo: String,
+    pub memo_hash: Option<BytesN<32>>,
     pub status: SettlementStatus,
     pub sub_payment_ids: Vec<u64>,
     pub created_at: u64,
