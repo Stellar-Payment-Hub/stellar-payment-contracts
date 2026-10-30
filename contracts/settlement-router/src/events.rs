@@ -7,8 +7,8 @@ pub fn emit_settlement_created(
     total_amount: i128,
     recipient_count: u32,
 ) {
-    let topics = (symbol_short!("created"), settlement_id, payer.clone());
-    env.events().publish(topics, (total_amount, recipient_count));
+    let topics = (soroban_sdk::symbol_short!("settle"), soroban_sdk::symbol_short!("created"), settlement_id);
+    env.events().publish(topics, (total_amount, recipient_count, payer.clone()));
 }
 
 pub fn emit_recipient_processed(
