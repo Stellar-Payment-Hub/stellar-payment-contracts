@@ -57,7 +57,8 @@ impl SettlementRouter {
             calculated_total += share.amount;
         }
 
-        if calculated_total <= 0 {
+        let min_thresh = storage::get_min_threshold(env);
+        if calculated_total < min_thresh {
             return Err(SettlementError::InvalidTotalAmount);
         }
 
@@ -297,6 +298,26 @@ impl SettlementRouter {
     /// Read timelock parameters for a settlement.
     pub fn get_timelock(env: Env, settlement_id: u64) -> Result<EscrowTimelock, SettlementError> {
         storage::get_timelock(&env, settlement_id).ok_or(SettlementError::SettlementNotFound)
+    }
+
+    /// Set minimum settlement threshold (Admin only).
+    pub fn set_min_threshold(env: Env, admin: Address, min: i128) -> Result<(), SettlementError> {
+        admin.require_auth();
+        let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
+        if admin != current_admin {
+            return Err(SettlementError::Unauthorized);
+        }
+        if min <= 0 {
+            return Err(SettlementError::InvalidTotalAmount);
+        }
+        storage::set_min_threshold(&env, min);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// Read minimum settlement threshold.
+    pub fn get_min_threshold(env: Env) -> i128 {
+        storage::get_min_threshold(&env)
     }
 
     /// Pause router operations (Admin only).

@@ -143,3 +143,11 @@ pub fn set_arbitrator(env: &Env, arbitrator: &Address) {
 pub fn get_arbitrator(env: &Env) -> Option<Address> {
     env.storage().instance().get(&DataKey::Arbitrator)
 }
+
+pub fn set_min_threshold(env: &Env, min: i128) {
+    env.storage().instance().set(&DataKey::MinSettlementThreshold, &min);
+}
+
+pub fn get_min_threshold(env: &Env) -> i128 {
+    env.storage().instance().get(&DataKey::MinSettlementThreshold).unwrap_or(1)
+}
