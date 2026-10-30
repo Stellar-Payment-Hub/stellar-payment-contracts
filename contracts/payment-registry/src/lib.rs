@@ -224,7 +224,33 @@ impl PaymentRegistry {
 
     /// Read a payment record by ID.
     pub fn get_payment(env: Env, id: u64) -> Result<Payment, ContractError> {
+        storage::extend_instance_ttl(&env);
         storage::get_payment(&env, id).ok_or(ContractError::PaymentNotFound)
+    }
+
+    /// Query a paginated range of payments (start_id inclusive, max_count items).
+    pub fn paginate_payments(env: Env, start_id: u64, limit: u32) -> Vec<Payment> {
+        storage::extend_instance_ttl(&env);
+        let total = storage::get_count(&env);
+        let mut results = Vec::new(&env);
+
+        if start_id == 0 || start_id > total {
+            return results;
+        }
+
+        let max = if (start_id + limit as u64 - 1) < total {
+            start_id + limit as u64 - 1
+        } else {
+            total
+        };
+
+        for id in start_id..=max {
+            if let Some(payment) = storage::get_payment(&env, id) {
+                results.push_back(payment);
+            }
+        }
+
+        results
     }
 
     /// Update payment status with strict state machine validation.
