@@ -268,6 +268,32 @@ impl PaymentStream {
         (0, 0, 0)
     }
 
+    /// Top-up stream with additional deposit tokens extending duration proportionally (Sender only).
+    pub fn extend_stream_deposit(
+        env: Env,
+        sender: Address,
+        id: u64,
+        extra_amount: i128,
+    ) -> Result<i128, StreamError> {
+        sender.require_auth();
+        let mut stream = storage::get_stream(&env, id).ok_or(StreamError::StreamNotFound)?;
+        if stream.sender != sender {
+            return Err(StreamError::Unauthorized);
+        }
+        if stream.status != StreamStatus::Active {
+            return Err(StreamError::StreamNotActive);
+        }
+        if extra_amount <= 0 {
+            return Err(StreamError::InvalidAmount);
+        }
+        stream.deposit_amount += extra_amount;
+        let extra_seconds = extra_amount / stream.rate_per_second;
+        stream.stop_time += extra_seconds as u64;
+        storage::set_stream(&env, id, &stream);
+        storage::extend_stream_ttl(&env, id);
+        Ok(stream.deposit_amount)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("stream_ok")
     }
