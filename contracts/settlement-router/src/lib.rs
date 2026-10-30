@@ -317,6 +317,15 @@ impl SettlementRouter {
         Ok(true)
     }
 
+    /// Query complete settlement record and cryptographic memo hash for audit logs.
+    pub fn export_settlement_audit(env: Env, id: u64) -> Option<(types::SettlementRecord, Option<BytesN<32>>)> {
+        if let Some(rec) = storage::get_settlement(&env, id) {
+            let hash = rec.memo_hash.clone();
+            return Some((rec, hash));
+        }
+        None
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("settle_ok")
     }
