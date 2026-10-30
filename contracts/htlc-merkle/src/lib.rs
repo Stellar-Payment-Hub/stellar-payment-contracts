@@ -253,6 +253,17 @@ impl HtlcMerkleVault {
         Ok(unspent)
     }
 
+    /// Query remaining seconds until HTLC timelock expires.
+    pub fn get_htlc_time_remaining(env: Env, id: u64) -> u64 {
+        if let Some(h) = storage::get_htlc(&env, id) {
+            let now = env.ledger().timestamp();
+            if h.timelock > now {
+                return h.timelock - now;
+            }
+        }
+        0
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("htlc_ok")
     }
