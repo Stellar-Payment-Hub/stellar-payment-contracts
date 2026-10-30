@@ -205,6 +205,11 @@ impl SettlementRouter {
     }
 
     /// Query current treasury address.
+    /// Query cumulative collected protocol fees for a specific token.
+    pub fn get_collected_fees(env: Env, token: Address) -> types::TokenFeeRecord {
+        storage::get_token_fees(&env, &token)
+    }
+
     pub fn get_treasury(env: Env) -> Option<Address> {
         storage::get_treasury(&env)
     }
