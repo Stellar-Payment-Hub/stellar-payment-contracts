@@ -72,3 +72,24 @@ pub struct EscrowTimelock {
     pub release_after: u64,
     pub auto_refund_after: u64,
 }
+
+#[contracttype]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum DisputeVerdict {
+    Pending = 0,
+    RefundPayer = 1,
+    ReleaseRecipients = 2,
+    SplitEvenly = 3,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SettlementDispute {
+    pub settlement_id: u64,
+    pub initiator: Address,
+    pub evidence_hash: BytesN<32>,
+    pub verdict: DisputeVerdict,
+    pub initiated_at: u64,
+    pub resolved_at: Option<u64>,
+}

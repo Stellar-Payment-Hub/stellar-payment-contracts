@@ -127,3 +127,11 @@ pub fn set_timelock(env: &Env, id: u64, lock: &crate::types::EscrowTimelock) {
 pub fn get_timelock(env: &Env, id: u64) -> Option<crate::types::EscrowTimelock> {
     env.storage().persistent().get(&DataKey::Timelock(id))
 }
+
+pub fn set_settlement_dispute(env: &Env, id: u64, dispute: &crate::types::SettlementDispute) {
+    env.storage().persistent().set(&DataKey::DisputeRecord(id), dispute);
+}
+
+pub fn get_settlement_dispute(env: &Env, id: u64) -> Option<crate::types::SettlementDispute> {
+    env.storage().persistent().get(&DataKey::DisputeRecord(id))
+}
