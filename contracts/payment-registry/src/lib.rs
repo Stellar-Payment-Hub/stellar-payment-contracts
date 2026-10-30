@@ -6,7 +6,7 @@ pub mod types;
 
 use errors::ContractError;
 use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String, Symbol};
-use types::{Payment, PaymentAuditLog, PaymentCategory, PaymentStatus, Role};
+use types::{DisputeStatus, Payment, PaymentAuditLog, PaymentCategory, PaymentDispute, PaymentStatus, Role};
 use soroban_sdk::{BytesN, Vec};
 
 #[contract]
@@ -337,6 +337,41 @@ impl PaymentRegistry {
             }
         }
         Ok(false)
+    }
+
+    /// Open a dispute against a pending or processing payment record.
+    pub fn open_dispute(env: Env, caller: Address, payment_id: u64, reason: String) -> Result<(), ContractError> {
+        caller.require_auth();
+        let payment = storage::get_payment(&env, payment_id).ok_or(ContractError::PaymentNotFound)?;
+
+        if caller != payment.creator && caller != payment.recipient {
+            return Err(ContractError::Unauthorized);
+        }
+        if payment.status != PaymentStatus::Pending && payment.status != PaymentStatus::Processing {
+            return Err(ContractError::InvalidTransition);
+        }
+        if storage::get_dispute(&env, payment_id).is_some() {
+            return Err(ContractError::DisputeAlreadyActive);
+        }
+
+        let now = env.ledger().timestamp();
+        let dispute = PaymentDispute {
+            payment_id,
+            initiator: caller.clone(),
+            reason,
+            status: DisputeStatus::Active,
+            opened_at: now,
+            resolved_at: None,
+        };
+
+        storage::set_dispute(&env, payment_id, &dispute);
+        events::emit_dispute_opened(&env, payment_id, &caller);
+        Ok(())
+    }
+
+    /// Read dispute details for a payment.
+    pub fn get_dispute(env: Env, payment_id: u64) -> Result<PaymentDispute, ContractError> {
+        storage::get_dispute(&env, payment_id).ok_or(ContractError::DisputeNotFound)
     }
 
     /// Read a payment record by ID.

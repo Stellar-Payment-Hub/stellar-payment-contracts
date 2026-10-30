@@ -63,3 +63,25 @@ pub struct PaymentAuditLog {
     pub transitioned_by: Address,
     pub timestamp: u64,
 }
+
+/// Dispute status tracking for contested payments
+#[contracttype]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum DisputeStatus {
+    None = 0,
+    Active = 1,
+    ResolvedRefundPayer = 2,
+    ResolvedReleaseRecipient = 3,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PaymentDispute {
+    pub payment_id: u64,
+    pub initiator: Address,
+    pub reason: String,
+    pub status: DisputeStatus,
+    pub opened_at: u64,
+    pub resolved_at: Option<u64>,
+}

@@ -101,3 +101,11 @@ pub fn increment_nonce(env: &Env, account: &Address) -> u64 {
     env.storage().instance().set(&DataKey::Nonce(account.clone()), &next);
     next
 }
+
+pub fn get_dispute(env: &Env, payment_id: u64) -> Option<crate::types::PaymentDispute> {
+    env.storage().persistent().get(&DataKey::PaymentDispute(payment_id))
+}
+
+pub fn set_dispute(env: &Env, payment_id: u64, dispute: &crate::types::PaymentDispute) {
+    env.storage().persistent().set(&DataKey::PaymentDispute(payment_id), dispute);
+}

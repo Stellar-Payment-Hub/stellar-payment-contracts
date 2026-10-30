@@ -61,3 +61,8 @@ pub fn emit_payment_expired(env: &Env, id: u64, timestamp: u64) {
     let topics = (soroban_sdk::symbol_short!("payment"), soroban_sdk::symbol_short!("expired"));
     env.events().publish(topics, (id, timestamp));
 }
+
+pub fn emit_dispute_opened(env: &Env, payment_id: u64, initiator: &Address) {
+    let topics = (soroban_sdk::symbol_short!("dispute"), soroban_sdk::symbol_short!("opened"));
+    env.events().publish(topics, (payment_id, initiator.clone()));
+}
