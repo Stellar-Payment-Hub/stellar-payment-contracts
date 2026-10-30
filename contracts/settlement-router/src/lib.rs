@@ -279,6 +279,26 @@ impl SettlementRouter {
         (amount * fee_bps as i128) / 10000
     }
 
+    /// Register strategic VIP partner discount (Admin only).
+    pub fn set_partner_discount(
+        env: Env,
+        admin: Address,
+        partner: Address,
+        discount_bps: u32,
+    ) -> Result<(), SettlementError> {
+        admin.require_auth();
+        let cur_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
+        if admin != cur_admin {
+            return Err(SettlementError::Unauthorized);
+        }
+        if discount_bps > 500 {
+            return Err(SettlementError::InvalidFeeBps);
+        }
+        storage::set_vip_discount(&env, &partner, discount_bps);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("settle_ok")
     }
