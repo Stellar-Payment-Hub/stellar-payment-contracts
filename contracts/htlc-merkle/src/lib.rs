@@ -69,6 +69,11 @@ impl HtlcMerkleVault {
         Ok(id)
     }
 
+    /// Query HTLC swap details by ID.
+    pub fn get_htlc(env: Env, id: u64) -> Option<HtlcRecord> {
+        storage::get_htlc(&env, id)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("htlc_ok")
     }
