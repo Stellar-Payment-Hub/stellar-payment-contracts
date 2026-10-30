@@ -204,6 +204,24 @@ impl SubscriptionEngine {
         Ok(())
     }
 
+    /// Terminate subscription immediately (Subscriber only).
+    pub fn cancel_by_subscriber(env: Env, subscriber: Address, sub_id: u64) -> Result<(), SubscriptionError> {
+        subscriber.require_auth();
+        let mut sub = storage::get_subscription(&env, sub_id).ok_or(SubscriptionError::SubscriptionNotFound)?;
+        if sub.subscriber != subscriber {
+            return Err(SubscriptionError::Unauthorized);
+        }
+        sub.status = SubscriptionStatus::Cancelled;
+        storage::set_subscription(&env, sub_id, &sub);
+        let plan = storage::get_plan(&env, sub.plan_id);
+        if let Some(p) = plan {
+            storage::adjust_merchant_stats(&env, &p.merchant, -1, -p.amount);
+        }
+        events::emit_subscription_status(&env, sub_id, SubscriptionStatus::Cancelled);
+        storage::extend_sub_ttl(&env, sub_id);
+        Ok(())
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("sub_ok")
     }
