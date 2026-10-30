@@ -178,6 +178,16 @@ impl SettlementRouter {
     }
 
     /// Query current fee configuration.
+    /// Calculate protocol fee amount in basis points for a given volume.
+    pub fn calculate_fee_amount(env: Env, amount: i128) -> i128 {
+        if let Some(config) = storage::get_fee_config(&env) {
+            if config.enabled && config.fee_bps > 0 && amount > 0 {
+                return (amount * config.fee_bps as i128) / 10000;
+            }
+        }
+        0
+    }
+
     pub fn get_fee_config(env: Env) -> Option<FeeConfig> {
         storage::get_fee_config(&env)
     }
