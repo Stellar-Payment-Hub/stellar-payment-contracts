@@ -3,6 +3,7 @@ pub mod errors;
 pub mod events;
 pub mod storage;
 pub mod types;
+pub mod token_vault;
 
 #[cfg(test)]
 mod test;
@@ -12,7 +13,7 @@ use soroban_sdk::{
     contract, contractclient, contractimpl, symbol_short, Address, Env, String, Symbol, Vec,
 };
 use types::{DisputeVerdict, EscrowTimelock, FeeConfig, RecipientShare, SettlementDispute, SettlementMilestone, SettlementRecord, SettlementStatus, WeightedShare};
-use soroban_sdk::{token, BytesN};
+use soroban_sdk::BytesN;
 
 /// Client interface for Soroban Inter-Contract Communication
 /// Calling the deployed PaymentRegistry contract.
@@ -115,6 +116,34 @@ impl SettlementRouter {
     }
 
     /// Configure protocol treasury address (Admin only).
+    /// Whitelist or configure a Soroban token for settlements (Admin only).
+    pub fn set_token_whitelist(
+        env: Env,
+        admin: Address,
+        token: Address,
+        enabled: bool,
+        min_deposit: i128,
+        max_deposit: i128,
+        decimals: u32,
+    ) -> Result<(), SettlementError> {
+        admin.require_auth();
+        let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
+        if admin != current_admin {
+            return Err(SettlementError::Unauthorized);
+        }
+        let config = types::TokenConfig {
+            address: token.clone(),
+            min_deposit,
+            max_deposit,
+            enabled,
+            decimals,
+        };
+        storage::set_token_whitelist(&env, &token, &config);
+        events::emit_token_whitelist_updated(&env, &token, enabled, min_deposit);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
     pub fn set_treasury(env: Env, admin: Address, treasury: Address) -> Result<(), SettlementError> {
         admin.require_auth();
         let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
