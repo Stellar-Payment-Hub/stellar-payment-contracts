@@ -145,6 +145,9 @@ impl PaymentRegistry {
             return Err(ContractError::ContractPaused);
         }
         creator.require_auth();
+        if storage::is_blacklisted(&env, &creator) || storage::is_blacklisted(&env, &recipient) {
+            return Err(ContractError::Unauthorized);
+        }
 
         if amount <= 0 {
             return Err(ContractError::InvalidAmount);
