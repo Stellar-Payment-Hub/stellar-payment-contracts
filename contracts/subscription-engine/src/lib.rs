@@ -122,6 +122,47 @@ impl SubscriptionEngine {
         false
     }
 
+    /// Execute scheduled recurring charge on subscriber.
+    pub fn charge_subscriber(
+        env: Env,
+        caller: Address,
+        sub_id: u64,
+    ) -> Result<u32, SubscriptionError> {
+        caller.require_auth();
+        let mut sub = storage::get_subscription(&env, sub_id).ok_or(SubscriptionError::SubscriptionNotFound)?;
+        if sub.status == SubscriptionStatus::Paused {
+            return Err(SubscriptionError::SubscriptionPaused);
+        }
+        if sub.status == SubscriptionStatus::Cancelled || sub.status == SubscriptionStatus::Expired {
+            return Err(SubscriptionError::SubscriptionCancelled);
+        }
+
+        let now = env.ledger().timestamp();
+        if now < sub.next_bill_at {
+            return Err(SubscriptionError::BillingEpochNotDue);
+        }
+        if sub.max_cycles > 0 && sub.cycles_billed >= sub.max_cycles {
+            sub.status = SubscriptionStatus::Expired;
+            storage::set_subscription(&env, sub_id, &sub);
+            return Err(SubscriptionError::MaxCyclesReached);
+        }
+
+        let plan = storage::get_plan(&env, sub.plan_id).ok_or(SubscriptionError::PlanNotFound)?;
+        sub.cycles_billed += 1;
+        sub.last_billed_at = now;
+        sub.next_bill_at = now + plan.interval_seconds;
+        sub.total_paid += plan.amount;
+
+        if sub.max_cycles > 0 && sub.cycles_billed >= sub.max_cycles {
+            sub.status = SubscriptionStatus::Expired;
+        }
+
+        storage::set_subscription(&env, sub_id, &sub);
+        events::emit_subscription_billed(&env, sub_id, &sub.subscriber, plan.amount, sub.cycles_billed);
+        storage::extend_sub_ttl(&env, sub_id);
+        Ok(sub.cycles_billed)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("sub_ok")
     }
