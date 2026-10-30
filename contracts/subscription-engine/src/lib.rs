@@ -68,6 +68,44 @@ impl SubscriptionEngine {
         storage::get_plan(&env, plan_id)
     }
 
+    /// Subscribe an account to an active recurring billing plan.
+    pub fn subscribe(
+        env: Env,
+        subscriber: Address,
+        plan_id: u64,
+    ) -> Result<u64, SubscriptionError> {
+        subscriber.require_auth();
+        let plan = storage::get_plan(&env, plan_id).ok_or(SubscriptionError::PlanNotFound)?;
+        if !plan.active {
+            return Err(SubscriptionError::PlanInactive);
+        }
+        if subscriber == plan.merchant {
+            return Err(SubscriptionError::SameAddress);
+        }
+
+        let now = env.ledger().timestamp();
+        let id = storage::increment_sub_count(&env);
+        let sub = SubscriptionRecord {
+            id,
+            plan_id,
+            subscriber: subscriber.clone(),
+            merchant: plan.merchant.clone(),
+            token: plan.token.clone(),
+            status: SubscriptionStatus::Active,
+            started_at: now,
+            last_billed_at: 0,
+            next_bill_at: now, // Due immediately for initial charge
+            cycles_billed: 0,
+            max_cycles: plan.max_cycles,
+            total_paid: 0,
+        };
+        storage::set_subscription(&env, id, &sub);
+        storage::adjust_merchant_stats(&env, &plan.merchant, 1, plan.amount);
+        events::emit_subscription_started(&env, id, plan_id, &subscriber);
+        storage::extend_sub_ttl(&env, id);
+        Ok(id)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("sub_ok")
     }
