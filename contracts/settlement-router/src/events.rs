@@ -50,3 +50,8 @@ pub fn emit_settlement_refunded(
     let topics = (soroban_sdk::symbol_short!("refund"), settlement_id, payer.clone());
     env.events().publish(topics, amount);
 }
+
+pub fn emit_router_upgraded(env: &Env, admin: &Address, new_wasm_hash: &soroban_sdk::BytesN<32>) {
+    let topics = (soroban_sdk::symbol_short!("router"), soroban_sdk::symbol_short!("upgraded"));
+    env.events().publish(topics, (admin.clone(), new_wasm_hash.clone()));
+}

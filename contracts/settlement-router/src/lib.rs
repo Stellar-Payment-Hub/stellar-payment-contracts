@@ -161,6 +161,18 @@ impl SettlementRouter {
         symbol_short!("settle_ok")
     }
 
+    /// Upgrade router contract code to new WASM hash (Admin only).
+    pub fn upgrade(env: Env, admin: Address, new_wasm_hash: BytesN<32>) -> Result<(), SettlementError> {
+        admin.require_auth();
+        let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
+        if admin != current_admin {
+            return Err(SettlementError::Unauthorized);
+        }
+        env.deployer().update_current_contract_wasm(new_wasm_hash.clone());
+        events::emit_router_upgraded(&env, &admin, &new_wasm_hash);
+        Ok(())
+    }
+
     /// Read the associated PaymentRegistry contract address.
     pub fn get_registry(env: Env) -> Result<Address, SettlementError> {
         storage::get_registry(&env).ok_or(SettlementError::NotInitialized)
