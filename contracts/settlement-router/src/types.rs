@@ -1,4 +1,15 @@
-use soroban_sdk::{contracttype, Address, String, Vec};
+use soroban_sdk::{contracttype, Address, BytesN, String, Vec};
+
+/// Configurable fee parameters in basis points (1 bps = 0.01%)
+#[contracttype]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct FeeConfig {
+    pub fee_bps: u32,       // e.g. 50 = 0.5%
+    pub max_fee_bps: u32,   // hard cap e.g. 500 = 5%
+    pub enabled: bool,
+}
+
+
 
 #[contracttype]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
