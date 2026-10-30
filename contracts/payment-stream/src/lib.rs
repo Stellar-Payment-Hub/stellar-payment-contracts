@@ -294,6 +294,30 @@ impl PaymentStream {
         Ok(stream.deposit_amount)
     }
 
+    /// Pause all streaming operations (Admin only).
+    pub fn pause(env: Env, admin: Address) -> Result<(), StreamError> {
+        admin.require_auth();
+        let cur_admin = storage::get_admin(&env).ok_or(StreamError::Unauthorized)?;
+        if admin != cur_admin {
+            return Err(StreamError::Unauthorized);
+        }
+        storage::set_paused(&env, true);
+        env.storage().instance().extend_ttl(50_000, 100_000);
+        Ok(())
+    }
+
+    /// Unpause streaming operations (Admin only).
+    pub fn unpause(env: Env, admin: Address) -> Result<(), StreamError> {
+        admin.require_auth();
+        let cur_admin = storage::get_admin(&env).ok_or(StreamError::Unauthorized)?;
+        if admin != cur_admin {
+            return Err(StreamError::Unauthorized);
+        }
+        storage::set_paused(&env, false);
+        env.storage().instance().extend_ttl(50_000, 100_000);
+        Ok(())
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("stream_ok")
     }
