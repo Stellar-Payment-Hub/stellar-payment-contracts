@@ -60,3 +60,13 @@ pub fn emit_router_paused(env: &Env, admin: &Address, paused: bool) {
     let topics = (soroban_sdk::symbol_short!("circuit"), soroban_sdk::symbol_short!("pause"));
     env.events().publish(topics, (admin.clone(), paused));
 }
+
+pub fn emit_dispute_raised(env: &Env, settlement_id: u64, initiator: &Address, evidence_hash: &soroban_sdk::BytesN<32>) {
+    let topics = (soroban_sdk::symbol_short!("dispute"), settlement_id, initiator.clone());
+    env.events().publish(topics, evidence_hash.clone());
+}
+
+pub fn emit_dispute_resolved(env: &Env, settlement_id: u64, verdict: u32) {
+    let topics = (soroban_sdk::symbol_short!("verdict"), settlement_id);
+    env.events().publish(topics, verdict);
+}
