@@ -184,6 +184,26 @@ impl SubscriptionEngine {
         Ok(())
     }
 
+    /// Resume a paused subscription (Subscriber only).
+    pub fn resume_subscription(env: Env, subscriber: Address, sub_id: u64) -> Result<(), SubscriptionError> {
+        subscriber.require_auth();
+        let mut sub = storage::get_subscription(&env, sub_id).ok_or(SubscriptionError::SubscriptionNotFound)?;
+        if sub.subscriber != subscriber {
+            return Err(SubscriptionError::Unauthorized);
+        }
+        if sub.status != SubscriptionStatus::Paused {
+            return Err(SubscriptionError::SubscriptionCancelled);
+        }
+        let plan = storage::get_plan(&env, sub.plan_id).ok_or(SubscriptionError::PlanNotFound)?;
+        let now = env.ledger().timestamp();
+        sub.status = SubscriptionStatus::Active;
+        sub.next_bill_at = now + plan.interval_seconds;
+        storage::set_subscription(&env, sub_id, &sub);
+        events::emit_subscription_status(&env, sub_id, SubscriptionStatus::Active);
+        storage::extend_sub_ttl(&env, sub_id);
+        Ok(())
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("sub_ok")
     }
