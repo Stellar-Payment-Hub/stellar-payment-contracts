@@ -167,6 +167,23 @@ impl SubscriptionEngine {
         Ok(sub.cycles_billed)
     }
 
+    /// Pause an active subscription (Subscriber only).
+    pub fn pause_subscription(env: Env, subscriber: Address, sub_id: u64) -> Result<(), SubscriptionError> {
+        subscriber.require_auth();
+        let mut sub = storage::get_subscription(&env, sub_id).ok_or(SubscriptionError::SubscriptionNotFound)?;
+        if sub.subscriber != subscriber {
+            return Err(SubscriptionError::Unauthorized);
+        }
+        if sub.status != SubscriptionStatus::Active {
+            return Err(SubscriptionError::SubscriptionCancelled);
+        }
+        sub.status = SubscriptionStatus::Paused;
+        storage::set_subscription(&env, sub_id, &sub);
+        events::emit_subscription_status(&env, sub_id, SubscriptionStatus::Paused);
+        storage::extend_sub_ttl(&env, sub_id);
+        Ok(())
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("sub_ok")
     }
