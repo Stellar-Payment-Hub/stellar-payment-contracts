@@ -573,6 +573,70 @@ mod test {
         assert_eq!(result, Err(Ok(ContractError::InvalidAmount)));
     }
 
+
+    #[test]
+    fn test_rbac_and_pause_controls() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(PaymentRegistry, ());
+        let client = PaymentRegistryClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        let operator = Address::generate(&env);
+        let user = Address::generate(&env);
+
+        client.initialize(&admin);
+        assert_eq!(client.has_role(&admin, &Role::Admin), true);
+
+        // Grant operator role
+        client.grant_role(&admin, &operator, &Role::Operator);
+        assert_eq!(client.has_role(&operator, &Role::Operator), true);
+
+        // Operator pauses contract
+        client.pause(&operator);
+        assert_eq!(client.is_paused(), true);
+
+        // Attempting to create payment while paused should fail
+        let memo = String::from_str(&env, "Test while paused");
+        let err = client.try_create_payment(&user, &admin, &1000, &memo);
+        assert_eq!(err, Err(Ok(ContractError::ContractPaused)));
+
+        // Admin unpauses
+        client.unpause(&admin);
+        assert_eq!(client.is_paused(), false);
+
+        // Payment succeeds after unpause
+        let id = client.create_payment(&user, &admin, &1000, &memo);
+        assert_eq!(id, 1);
+    }
+
+    #[test]
+    fn test_batch_payment_creation() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(PaymentRegistry, ());
+        let client = PaymentRegistryClient::new(&env, &contract_id);
+
+        let creator = Address::generate(&env);
+        let mut recipients = Vec::new(&env);
+        let mut amounts = Vec::new(&env);
+
+        for _ in 0..5 {
+            recipients.push_back(Address::generate(&env));
+            amounts.push_back(20_000_000);
+        }
+
+        let memo = String::from_str(&env, "Payroll Batch #1");
+        let ids = client.create_payments_batch(&creator, &recipients, &amounts, &memo);
+        assert_eq!(ids.len(), 5);
+        assert_eq!(client.get_payment_count(), 5);
+
+        let paginated = client.paginate_payments(&1, &10);
+        assert_eq!(paginated.len(), 5);
+    }
+
     #[test]
     fn test_same_address_rejected() {
         let env = Env::default();
