@@ -108,7 +108,52 @@ impl SettlementRouter {
         }
         storage::set_admin(&env, &admin);
         storage::set_registry(&env, &registry_contract);
+        storage::extend_instance_ttl(&env);
         Ok(())
+    }
+
+    /// Configure protocol treasury address (Admin only).
+    pub fn set_treasury(env: Env, admin: Address, treasury: Address) -> Result<(), SettlementError> {
+        admin.require_auth();
+        let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
+        if admin != current_admin {
+            return Err(SettlementError::Unauthorized);
+        }
+        storage::set_treasury(&env, &treasury);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// Configure protocol fee parameters in basis points (Admin only).
+    pub fn set_fee_config(
+        env: Env,
+        admin: Address,
+        fee_bps: u32,
+        max_fee_bps: u32,
+        enabled: bool,
+    ) -> Result<(), SettlementError> {
+        admin.require_auth();
+        let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
+        if admin != current_admin {
+            return Err(SettlementError::Unauthorized);
+        }
+        if fee_bps > max_fee_bps || max_fee_bps > 1000 { // Max 10%
+            return Err(SettlementError::InvalidFeeBps);
+        }
+        let config = FeeConfig { fee_bps, max_fee_bps, enabled };
+        storage::set_fee_config(&env, &config);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// Query current fee configuration.
+    pub fn get_fee_config(env: Env) -> Option<FeeConfig> {
+        storage::get_fee_config(&env)
+    }
+
+    /// Query current treasury address.
+    pub fn get_treasury(env: Env) -> Option<Address> {
+        storage::get_treasury(&env)
     }
 
     /// Read contract health/status symbol.
