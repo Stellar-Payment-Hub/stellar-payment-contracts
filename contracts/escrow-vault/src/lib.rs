@@ -197,6 +197,28 @@ impl EscrowVault {
         0
     }
 
+    /// Claim refund after statutory deadline has passed without seller action (Buyer only).
+    pub fn claim_timelock_refund(env: Env, buyer: Address, escrow_id: u64) -> Result<(), EscrowError> {
+        buyer.require_auth();
+        let mut esc = storage::get_escrow(&env, escrow_id).ok_or(EscrowError::EscrowNotFound)?;
+        if esc.buyer != buyer {
+            return Err(EscrowError::Unauthorized);
+        }
+        if esc.status != EscrowStatus::Funded {
+            return Err(EscrowError::EscrowNotActive);
+        }
+        let now = env.ledger().timestamp();
+        if now < esc.deadline {
+            return Err(EscrowError::DeadlineNotReached);
+        }
+        esc.status = EscrowStatus::Refunded;
+        esc.remaining_amount = 0;
+        storage::set_escrow(&env, escrow_id, &esc);
+        events::emit_escrow_status(&env, escrow_id, EscrowStatus::Refunded);
+        storage::extend_escrow_ttl(&env, escrow_id);
+        Ok(())
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("escrow_ok")
     }
