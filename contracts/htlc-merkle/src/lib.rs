@@ -174,6 +174,11 @@ impl HtlcMerkleVault {
         Ok(id)
     }
 
+    /// Query Merkle distribution parameters by ID.
+    pub fn get_merkle_dist(env: Env, id: u64) -> Option<MerkleDistribution> {
+        storage::get_dist(&env, id)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("htlc_ok")
     }
