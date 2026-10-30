@@ -74,6 +74,11 @@ impl EscrowVault {
         Ok(id)
     }
 
+    /// Query escrow terms and state by ID.
+    pub fn get_escrow(env: Env, id: u64) -> Option<EscrowRecord> {
+        storage::get_escrow(&env, id)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("escrow_ok")
     }
