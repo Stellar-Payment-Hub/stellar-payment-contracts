@@ -187,6 +187,16 @@ impl EscrowVault {
         Ok(arb_fee)
     }
 
+    /// Calculate arbitration fee for an escrow amount.
+    pub fn calculate_arbitrator_fee(env: Env, escrow_id: u64) -> i128 {
+        if let Some(esc) = storage::get_escrow(&env, escrow_id) {
+            if esc.arbitrator_fee_bps > 0 {
+                return (esc.remaining_amount * esc.arbitrator_fee_bps as i128) / 10000;
+            }
+        }
+        0
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("escrow_ok")
     }
