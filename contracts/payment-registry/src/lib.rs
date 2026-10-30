@@ -101,6 +101,29 @@ impl PaymentRegistry {
     }
 
     /// Read contract status and availability.
+    /// Flag or unflag an account on the protocol sanctions blacklist (Admin/Operator only).
+    pub fn set_blacklisted_address(
+        env: Env,
+        caller: Address,
+        target: Address,
+        blacklisted: bool,
+    ) -> Result<(), ContractError> {
+        caller.require_auth();
+        let is_admin = storage::get_admin(&env).map(|a| a == caller).unwrap_or(false);
+        let is_operator = storage::has_role(&env, &caller, Role::Operator);
+        if !is_admin && !is_operator {
+            return Err(ContractError::Unauthorized);
+        }
+        storage::set_blacklist(&env, &target, blacklisted);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// Check if an address is flagged on the compliance blacklist.
+    pub fn is_address_blacklisted(env: Env, account: Address) -> bool {
+        storage::is_blacklisted(&env, &account)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("ready")
     }
