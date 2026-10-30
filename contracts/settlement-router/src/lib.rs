@@ -536,6 +536,7 @@ impl SettlementRouter {
         recipients: Vec<Address>,
         memo: String,
     ) -> Result<u64, SettlementError> {
+        // zero and negative amount validation guard
         if total_amount <= 0 {
             return Err(SettlementError::InvalidTotalAmount);
         }
