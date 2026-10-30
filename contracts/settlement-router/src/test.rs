@@ -481,3 +481,34 @@ fn test_token_whitelist_and_fee_calculation() {
     let fee = router_client.calculate_fee_amount(&100_000_000);
     assert_eq!(fee, 500_000);
 }
+
+
+#[test]
+fn test_token_pause_and_validation_defenses() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let reg_contract_id = env.register(PaymentRegistry, ());
+    let router_contract_id = env.register(SettlementRouter, ());
+    let router_client = SettlementRouterClient::new(&env, &router_contract_id);
+    router_client.initialize(&admin, &reg_contract_id);
+
+    let token = Address::generate(&env);
+    router_client.set_token_whitelist(&admin, &token, &true, &5_000_000, &1_000_000_000, &7);
+
+    let payer = Address::generate(&env);
+    let r1 = Address::generate(&env);
+    let mut recipients = Vec::new(&env);
+    recipients.push_back(r1);
+
+    let memo = String::from_str(&env, "Test Memo");
+
+    // Test pause
+    router_client.pause_tokens(&admin, &true);
+    assert_eq!(router_client.is_tokens_paused(), true);
+
+    // Test zero amount split rejected
+    let res = router_client.try_execute_token_split_bill(&payer, &token, &0, &recipients, &memo);
+    assert!(res.is_err());
+}
