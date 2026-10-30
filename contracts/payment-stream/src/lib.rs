@@ -213,6 +213,26 @@ impl PaymentStream {
         Ok((to_recipient, to_sender))
     }
 
+    /// Forfeit remainder of stream and pull accrued tokens (Recipient only).
+    pub fn cancel_by_recipient(env: Env, recipient: Address, id: u64) -> Result<i128, StreamError> {
+        recipient.require_auth();
+        let mut stream = storage::get_stream(&env, id).ok_or(StreamError::StreamNotFound)?;
+        if stream.recipient != recipient {
+            return Err(StreamError::Unauthorized);
+        }
+        if stream.status != StreamStatus::Active && stream.status != StreamStatus::Paused {
+            return Err(StreamError::StreamNotActive);
+        }
+
+        let to_recipient = Self::calculate_withdrawable(env.clone(), id);
+        stream.status = StreamStatus::Cancelled;
+        stream.withdrawn_amount += to_recipient;
+        storage::set_stream(&env, id, &stream);
+        events::emit_stream_status(&env, id, StreamStatus::Cancelled);
+        storage::extend_stream_ttl(&env, id);
+        Ok(to_recipient)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("stream_ok")
     }
