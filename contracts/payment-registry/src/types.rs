@@ -35,3 +35,16 @@ pub struct Payment {
     pub created_at: u64,
     pub updated_at: u64,
 }
+
+/// Standard categories for classifying on-chain financial settlements
+#[contracttype]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum PaymentCategory {
+    Standard = 0,
+    Disbursement = 1,
+    Invoice = 2,
+    Tip = 3,
+    Remittance = 4,
+    Escrow = 5,
+}
