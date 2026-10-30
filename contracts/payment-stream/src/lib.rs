@@ -169,6 +169,27 @@ impl PaymentStream {
         Ok(())
     }
 
+    /// Resume a paused stream, extending stop time by duration of pause (Sender only).
+    pub fn resume_stream(env: Env, sender: Address, id: u64) -> Result<(), StreamError> {
+        sender.require_auth();
+        let mut stream = storage::get_stream(&env, id).ok_or(StreamError::StreamNotFound)?;
+        if stream.sender != sender {
+            return Err(StreamError::Unauthorized);
+        }
+        if stream.status != StreamStatus::Paused {
+            return Err(StreamError::StreamNotActive);
+        }
+        let now = env.ledger().timestamp();
+        let duration_paused = now - stream.paused_at;
+        stream.pause_duration += duration_paused;
+        stream.paused_at = 0;
+        stream.status = StreamStatus::Active;
+        storage::set_stream(&env, id, &stream);
+        events::emit_stream_status(&env, id, StreamStatus::Active);
+        storage::extend_stream_ttl(&env, id);
+        Ok(())
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("stream_ok")
     }
