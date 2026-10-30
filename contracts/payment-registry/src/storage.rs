@@ -8,6 +8,7 @@ pub enum DataKey {
     Counter,
     Payment(u64),
     Role(Address, u32),
+    Blacklist(Address),
     Paused,
     ReentrancyLocked,
     Nonce(Address),
@@ -108,4 +109,14 @@ pub fn get_dispute(env: &Env, payment_id: u64) -> Option<crate::types::PaymentDi
 
 pub fn set_dispute(env: &Env, payment_id: u64, dispute: &crate::types::PaymentDispute) {
     env.storage().persistent().set(&DataKey::PaymentDispute(payment_id), dispute);
+}
+
+
+pub fn set_blacklist(env: &Env, account: &Address, blacklisted: bool) {
+    env.storage().persistent().set(&DataKey::Blacklist(account.clone()), &blacklisted);
+    env.storage().persistent().extend_ttl(&DataKey::Blacklist(account.clone()), 50_000, 100_000);
+}
+
+pub fn is_blacklisted(env: &Env, account: &Address) -> bool {
+    env.storage().persistent().get(&DataKey::Blacklist(account.clone())).unwrap_or(false)
 }
