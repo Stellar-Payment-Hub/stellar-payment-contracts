@@ -124,6 +124,15 @@ impl PaymentRegistry {
         storage::is_blacklisted(&env, &account)
     }
 
+    /// Read full operational telemetry snapshot.
+    pub fn get_hub_telemetry(env: Env) -> types::HubTelemetry {
+        types::HubTelemetry {
+            total_payments: storage::get_count(&env),
+            contract_paused: storage::is_paused(&env),
+            protocol_version: 22,
+        }
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("ready")
     }
