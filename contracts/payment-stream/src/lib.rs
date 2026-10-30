@@ -77,6 +77,11 @@ impl PaymentStream {
         Ok(id)
     }
 
+    /// Query full stream details by ID.
+    pub fn get_stream(env: Env, id: u64) -> Option<StreamRecord> {
+        storage::get_stream(&env, id)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("stream_ok")
     }
