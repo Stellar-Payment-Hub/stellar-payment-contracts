@@ -326,6 +326,45 @@ impl SettlementRouter {
         storage::get_total_volume(&env)
     }
 
+    /// Register a project milestone for progressive disbursement.
+    pub fn add_milestone(
+        env: Env,
+        caller: Address,
+        settlement_id: u64,
+        index: u32,
+        description: String,
+        amount: i128,
+    ) -> Result<(), SettlementError> {
+        caller.require_auth();
+
+        let record = storage::get_settlement(&env, settlement_id)
+            .ok_or(SettlementError::SettlementNotFound)?;
+
+        if record.payer != caller {
+            return Err(SettlementError::Unauthorized);
+        }
+        if amount <= 0 || amount > record.total_amount {
+            return Err(SettlementError::InvalidShareAmount);
+        }
+
+        let milestone = SettlementMilestone {
+            settlement_id,
+            milestone_index: index,
+            description,
+            amount,
+            executed: false,
+        };
+
+        storage::set_milestone(&env, settlement_id, index, &milestone);
+        storage::extend_settlement_ttl(&env, settlement_id);
+        Ok(())
+    }
+
+    /// Read milestone details.
+    pub fn get_milestone(env: Env, settlement_id: u64, index: u32) -> Result<SettlementMilestone, SettlementError> {
+        storage::get_milestone(&env, settlement_id, index).ok_or(SettlementError::MilestoneNotFound)
+    }
+
     /// Pause router operations (Admin only).
     pub fn pause(env: Env, admin: Address) -> Result<(), SettlementError> {
         admin.require_auth();
