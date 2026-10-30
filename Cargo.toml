@@ -5,6 +5,7 @@ members = [
     "contracts/settlement-router",
     "contracts/subscription-engine",
     "contracts/escrow-vault",
+    "contracts/payment-stream",
 ]
 
 [profile.release]
