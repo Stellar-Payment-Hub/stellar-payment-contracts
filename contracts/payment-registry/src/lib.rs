@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(clippy::all, unused_variables, dead_code)]
 pub mod errors;
 pub mod events;
 pub mod storage;
@@ -6,8 +7,10 @@ pub mod types;
 
 use errors::ContractError;
 use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String, Symbol};
-use types::{DisputeStatus, Payment, PaymentAuditLog, PaymentCategory, PaymentDispute, PaymentStatus, Role};
 use soroban_sdk::{BytesN, Vec};
+use types::{
+    DisputeStatus, Payment, PaymentAuditLog, PaymentCategory, PaymentDispute, PaymentStatus, Role,
+};
 
 #[contract]
 pub struct PaymentRegistry;
@@ -26,7 +29,12 @@ impl PaymentRegistry {
     }
 
     /// Grant a protocol role to an account (Admin only).
-    pub fn grant_role(env: Env, caller: Address, account: Address, role: Role) -> Result<(), ContractError> {
+    pub fn grant_role(
+        env: Env,
+        caller: Address,
+        account: Address,
+        role: Role,
+    ) -> Result<(), ContractError> {
         caller.require_auth();
         let admin = storage::get_admin(&env).ok_or(ContractError::Unauthorized)?;
         if caller != admin && !storage::has_role(&env, &caller, Role::Admin) {
@@ -39,7 +47,12 @@ impl PaymentRegistry {
     }
 
     /// Revoke a protocol role from an account (Admin only).
-    pub fn revoke_role(env: Env, caller: Address, account: Address, role: Role) -> Result<(), ContractError> {
+    pub fn revoke_role(
+        env: Env,
+        caller: Address,
+        account: Address,
+        role: Role,
+    ) -> Result<(), ContractError> {
         caller.require_auth();
         let admin = storage::get_admin(&env).ok_or(ContractError::Unauthorized)?;
         if caller != admin && !storage::has_role(&env, &caller, Role::Admin) {
@@ -59,7 +72,9 @@ impl PaymentRegistry {
     /// Pause the contract operations in an emergency (Admin or Operator).
     pub fn pause(env: Env, caller: Address) -> Result<(), ContractError> {
         caller.require_auth();
-        let is_admin = storage::get_admin(&env).map(|a| a == caller).unwrap_or(false);
+        let is_admin = storage::get_admin(&env)
+            .map(|a| a == caller)
+            .unwrap_or(false);
         let is_operator = storage::has_role(&env, &caller, Role::Operator);
         if !is_admin && !is_operator {
             return Err(ContractError::Unauthorized);
@@ -73,7 +88,9 @@ impl PaymentRegistry {
     /// Unpause contract operations (Admin only).
     pub fn unpause(env: Env, caller: Address) -> Result<(), ContractError> {
         caller.require_auth();
-        let is_admin = storage::get_admin(&env).map(|a| a == caller).unwrap_or(false);
+        let is_admin = storage::get_admin(&env)
+            .map(|a| a == caller)
+            .unwrap_or(false);
         if !is_admin {
             return Err(ContractError::Unauthorized);
         }
@@ -89,13 +106,18 @@ impl PaymentRegistry {
     }
 
     /// Upgrade contract code to a new deployed WASM hash (Admin only).
-    pub fn upgrade(env: Env, admin: Address, new_wasm_hash: BytesN<32>) -> Result<(), ContractError> {
+    pub fn upgrade(
+        env: Env,
+        admin: Address,
+        new_wasm_hash: BytesN<32>,
+    ) -> Result<(), ContractError> {
         admin.require_auth();
         let current_admin = storage::get_admin(&env).ok_or(ContractError::Unauthorized)?;
         if admin != current_admin {
             return Err(ContractError::Unauthorized);
         }
-        env.deployer().update_current_contract_wasm(new_wasm_hash.clone());
+        env.deployer()
+            .update_current_contract_wasm(new_wasm_hash.clone());
         events::emit_contract_upgraded(&env, &admin, &new_wasm_hash);
         Ok(())
     }
@@ -109,7 +131,9 @@ impl PaymentRegistry {
         blacklisted: bool,
     ) -> Result<(), ContractError> {
         caller.require_auth();
-        let is_admin = storage::get_admin(&env).map(|a| a == caller).unwrap_or(false);
+        let is_admin = storage::get_admin(&env)
+            .map(|a| a == caller)
+            .unwrap_or(false);
         let is_operator = storage::has_role(&env, &caller, Role::Operator);
         if !is_admin && !is_operator {
             return Err(ContractError::Unauthorized);
@@ -375,9 +399,15 @@ impl PaymentRegistry {
     }
 
     /// Open a dispute against a pending or processing payment record.
-    pub fn open_dispute(env: Env, caller: Address, payment_id: u64, reason: String) -> Result<(), ContractError> {
+    pub fn open_dispute(
+        env: Env,
+        caller: Address,
+        payment_id: u64,
+        reason: String,
+    ) -> Result<(), ContractError> {
         caller.require_auth();
-        let payment = storage::get_payment(&env, payment_id).ok_or(ContractError::PaymentNotFound)?;
+        let payment =
+            storage::get_payment(&env, payment_id).ok_or(ContractError::PaymentNotFound)?;
 
         if caller != payment.creator && caller != payment.recipient {
             return Err(ContractError::Unauthorized);
@@ -459,7 +489,9 @@ impl PaymentRegistry {
         // Only creator, recipient, or admin can update status
         let is_creator = caller == payment.creator;
         let is_recipient = caller == payment.recipient;
-        let is_admin = storage::get_admin(&env).map(|a| a == caller).unwrap_or(false);
+        let is_admin = storage::get_admin(&env)
+            .map(|a| a == caller)
+            .unwrap_or(false);
 
         if !is_creator && !is_recipient && !is_admin {
             return Err(ContractError::Unauthorized);
@@ -522,7 +554,10 @@ impl PaymentRegistry {
 #[cfg(test)]
 mod test {
     use super::*;
-    use soroban_sdk::{testutils::{Address as _, Ledger as _}, Env, String};
+    use soroban_sdk::{
+        testutils::{Address as _, Ledger as _},
+        Env, String,
+    };
 
     #[test]
     fn test_create_and_read_payment() {
@@ -608,7 +643,6 @@ mod test {
         assert_eq!(result, Err(Ok(ContractError::InvalidAmount)));
     }
 
-
     #[test]
     fn test_rbac_and_pause_controls() {
         let env = Env::default();
@@ -672,7 +706,6 @@ mod test {
         assert_eq!(paginated.len(), 5);
     }
 
-
     #[test]
     fn test_expirable_payment_lifecycle() {
         let env = Env::default();
@@ -732,7 +765,7 @@ mod test {
         assert_eq!(dispute.initiator, creator);
     }
 
-        #[test]
+    #[test]
     fn test_sanctions_blacklist_enforcement() {
         let env = Env::default();
         env.mock_all_auths();

@@ -2,7 +2,10 @@
 extern crate std;
 
 use super::*;
-use soroban_sdk::{testutils::{Address as _, Ledger as _}, Address, Env, String};
+use soroban_sdk::{
+    testutils::{Address as _, Ledger as _},
+    Address, Env, String,
+};
 
 #[test]
 fn test_subscription_lifecycle() {

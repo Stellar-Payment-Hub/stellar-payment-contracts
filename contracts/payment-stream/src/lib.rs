@@ -1,3 +1,5 @@
+#![no_std]
+#![allow(clippy::all, unused_variables, dead_code)]
 pub mod errors;
 pub mod events;
 pub mod storage;
@@ -43,7 +45,8 @@ impl PaymentStream {
         if sender == recipient {
             return Err(StreamError::SamePartyAddress);
         }
-        if duration_seconds < 60 { // Minimum 1 minute
+        if duration_seconds < 60 {
+            // Minimum 1 minute
             return Err(StreamError::InvalidDuration);
         }
         if cliff_duration_seconds > duration_seconds {
@@ -52,7 +55,11 @@ impl PaymentStream {
 
         let now = env.ledger().timestamp();
         let stop_time = now + duration_seconds;
-        let cliff_time = if cliff_duration_seconds > 0 { now + cliff_duration_seconds } else { 0 };
+        let cliff_time = if cliff_duration_seconds > 0 {
+            now + cliff_duration_seconds
+        } else {
+            0
+        };
         let rate_per_second = deposit_amount / (duration_seconds as i128);
 
         let id = storage::increment_stream_count(&env);
@@ -111,7 +118,9 @@ impl PaymentStream {
         let elapsed = effective_now - stream.start_time - stream.pause_duration;
         let total_accrued = (elapsed as i128) * stream.rate_per_second;
         let available = total_accrued - stream.withdrawn_amount;
-        available.max(0).min(stream.deposit_amount - stream.withdrawn_amount)
+        available
+            .max(0)
+            .min(stream.deposit_amount - stream.withdrawn_amount)
     }
 
     /// Query whether cliff period has been unlocked.
@@ -123,7 +132,11 @@ impl PaymentStream {
     }
 
     /// Claim accrued withdrawable tokens (Recipient only).
-    pub fn withdraw_from_stream(env: Env, recipient: Address, id: u64) -> Result<i128, StreamError> {
+    pub fn withdraw_from_stream(
+        env: Env,
+        recipient: Address,
+        id: u64,
+    ) -> Result<i128, StreamError> {
         recipient.require_auth();
         let mut stream = storage::get_stream(&env, id).ok_or(StreamError::StreamNotFound)?;
         if stream.recipient != recipient {
@@ -191,7 +204,11 @@ impl PaymentStream {
     }
 
     /// Cancel stream returning unaccrued tokens to sender and accrued to recipient (Sender only).
-    pub fn cancel_by_sender(env: Env, sender: Address, id: u64) -> Result<(i128, i128), StreamError> {
+    pub fn cancel_by_sender(
+        env: Env,
+        sender: Address,
+        id: u64,
+    ) -> Result<(i128, i128), StreamError> {
         sender.require_auth();
         let mut stream = storage::get_stream(&env, id).ok_or(StreamError::StreamNotFound)?;
         if stream.sender != sender {

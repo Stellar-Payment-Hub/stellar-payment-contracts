@@ -2,7 +2,10 @@
 extern crate std;
 
 use super::*;
-use soroban_sdk::{testutils::{Address as _, Ledger as _}, Address, Bytes, BytesN, Env, Vec};
+use soroban_sdk::{
+    testutils::{Address as _, Ledger as _},
+    Address, Bytes, BytesN, Env, Vec,
+};
 
 #[test]
 fn test_htlc_preimage_claim_and_refund() {

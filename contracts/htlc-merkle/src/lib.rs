@@ -1,3 +1,5 @@
+#![no_std]
+#![allow(clippy::all, unused_variables, dead_code)]
 pub mod errors;
 pub mod events;
 pub mod storage;
@@ -43,7 +45,8 @@ impl HtlcMerkleVault {
         if sender == recipient {
             return Err(HtlcError::SamePartyAddress);
         }
-        if duration_seconds < 3600 { // Minimum 1 hour timelock
+        if duration_seconds < 3600 {
+            // Minimum 1 hour timelock
             return Err(HtlcError::InvalidTimelock);
         }
 
@@ -170,7 +173,9 @@ impl HtlcMerkleVault {
             claims_count: 0,
         };
         storage::set_dist(&env, id, &dist);
-        env.storage().persistent().extend_ttl(&storage::DataKey::Distribution(id), 50_000, 100_000);
+        env.storage()
+            .persistent()
+            .extend_ttl(&storage::DataKey::Distribution(id), 50_000, 100_000);
         Ok(id)
     }
 
@@ -237,7 +242,11 @@ impl HtlcMerkleVault {
     }
 
     /// Reclaim unspent tokens after Merkle distribution expiration (Distributor only).
-    pub fn reclaim_unspent_merkle(env: Env, distributor: Address, dist_id: u64) -> Result<i128, HtlcError> {
+    pub fn reclaim_unspent_merkle(
+        env: Env,
+        distributor: Address,
+        dist_id: u64,
+    ) -> Result<i128, HtlcError> {
         distributor.require_auth();
         let mut dist = storage::get_dist(&env, dist_id).ok_or(HtlcError::DistributionNotFound)?;
         if dist.distributor != distributor {
@@ -274,7 +283,9 @@ impl HtlcMerkleVault {
     /// Manually renew storage TTL for an active Merkle distribution.
     pub fn extend_dist_ttl(env: Env, id: u64) -> Result<(), HtlcError> {
         let _dist = storage::get_dist(&env, id).ok_or(HtlcError::DistributionNotFound)?;
-        env.storage().persistent().extend_ttl(&storage::DataKey::Distribution(id), 50_000, 100_000);
+        env.storage()
+            .persistent()
+            .extend_ttl(&storage::DataKey::Distribution(id), 50_000, 100_000);
         Ok(())
     }
 

@@ -135,7 +135,12 @@ fn test_split_bill_remainder_allocation() {
     recipients.push_back(Address::generate(&env));
 
     let total = 100; // 100 / 3 = 33, 33, 34
-    let sid = router.split_bill(&payer, &total, &recipients, &String::from_str(&env, "Remainder"));
+    let sid = router.split_bill(
+        &payer,
+        &total,
+        &recipients,
+        &String::from_str(&env, "Remainder"),
+    );
 
     let shares = router.get_recipients(&sid);
     assert_eq!(shares.get(0).unwrap().amount, 33);
@@ -210,7 +215,6 @@ fn test_unauthorized_execution_rejected() {
     assert!(res.is_err());
 }
 
-
 #[test]
 fn test_split_bill_weighted_proportions_and_remainder() {
     let env = Env::default();
@@ -230,9 +234,18 @@ fn test_split_bill_weighted_proportions_and_remainder() {
 
     // Split 100 Stroops with weights 50, 30, 20
     let mut shares = Vec::new(&env);
-    shares.push_back(WeightedShare { recipient: r1.clone(), weight: 50 });
-    shares.push_back(WeightedShare { recipient: r2.clone(), weight: 30 });
-    shares.push_back(WeightedShare { recipient: r3.clone(), weight: 20 });
+    shares.push_back(WeightedShare {
+        recipient: r1.clone(),
+        weight: 50,
+    });
+    shares.push_back(WeightedShare {
+        recipient: r2.clone(),
+        weight: 30,
+    });
+    shares.push_back(WeightedShare {
+        recipient: r3.clone(),
+        weight: 20,
+    });
 
     let memo = String::from_str(&env, "Weighted Split 50/30/20");
     let settle_id = client.split_bill_weighted(&payer, &100, &shares, &memo);
@@ -245,9 +258,18 @@ fn test_split_bill_weighted_proportions_and_remainder() {
 
     // Odd amount test: 100 Stroops with 3 equal weights 1:1:1
     let mut odd_shares = Vec::new(&env);
-    odd_shares.push_back(WeightedShare { recipient: r1, weight: 1 });
-    odd_shares.push_back(WeightedShare { recipient: r2, weight: 1 });
-    odd_shares.push_back(WeightedShare { recipient: r3, weight: 1 });
+    odd_shares.push_back(WeightedShare {
+        recipient: r1,
+        weight: 1,
+    });
+    odd_shares.push_back(WeightedShare {
+        recipient: r2,
+        weight: 1,
+    });
+    odd_shares.push_back(WeightedShare {
+        recipient: r3,
+        weight: 1,
+    });
 
     let odd_id = client.split_bill_weighted(&payer, &100, &odd_shares, &memo);
     let odd_recs = client.get_recipients(&odd_id);
@@ -285,7 +307,10 @@ fn test_treasury_pause_and_refund_lifecycle() {
     let payer = Address::generate(&env);
     let r1 = Address::generate(&env);
     let mut shares = Vec::new(&env);
-    shares.push_back(RecipientShare { recipient: r1, amount: 5000 });
+    shares.push_back(RecipientShare {
+        recipient: r1,
+        amount: 5000,
+    });
     let memo = String::from_str(&env, "Paused test");
 
     // Unpause
@@ -315,7 +340,10 @@ fn test_timelock_release_and_deadline_enforcement() {
     let payer = Address::generate(&env);
     let r1 = Address::generate(&env);
     let mut shares = Vec::new(&env);
-    shares.push_back(RecipientShare { recipient: r1, amount: 100_000 });
+    shares.push_back(RecipientShare {
+        recipient: r1,
+        amount: 100_000,
+    });
 
     let memo = String::from_str(&env, "Timelocked Escrow");
     let settle_id = client.create_settlement(&payer, &shares, &memo);
@@ -356,7 +384,10 @@ fn test_dispute_initiation_and_arbitrator_resolution() {
     let payer = Address::generate(&env);
     let r1 = Address::generate(&env);
     let mut shares = Vec::new(&env);
-    shares.push_back(RecipientShare { recipient: r1, amount: 50_000 });
+    shares.push_back(RecipientShare {
+        recipient: r1,
+        amount: 50_000,
+    });
 
     let memo = String::from_str(&env, "Contested Order");
     let settle_id = client.create_settlement(&payer, &shares, &memo);
@@ -397,7 +428,10 @@ fn test_milestone_progressive_release() {
     let payer = Address::generate(&env);
     let r1 = Address::generate(&env);
     let mut shares = Vec::new(&env);
-    shares.push_back(RecipientShare { recipient: r1, amount: 200_000 });
+    shares.push_back(RecipientShare {
+        recipient: r1,
+        amount: 200_000,
+    });
 
     let memo = String::from_str(&env, "Project Alpha Escrow");
     let settle_id = client.create_settlement(&payer, &shares, &memo);
@@ -438,7 +472,10 @@ fn test_min_threshold_and_total_volume_tracking() {
     let payer = Address::generate(&env);
     let r1 = Address::generate(&env);
     let mut tiny_shares = Vec::new(&env);
-    tiny_shares.push_back(RecipientShare { recipient: r1.clone(), amount: 500 });
+    tiny_shares.push_back(RecipientShare {
+        recipient: r1.clone(),
+        amount: 500,
+    });
 
     let memo = String::from_str(&env, "Dust attempt");
     let err = client.try_create_settlement(&payer, &tiny_shares, &memo);
@@ -446,14 +483,16 @@ fn test_min_threshold_and_total_volume_tracking() {
 
     // Valid settlement above threshold
     let mut valid_shares = Vec::new(&env);
-    valid_shares.push_back(RecipientShare { recipient: r1, amount: 50_000 });
+    valid_shares.push_back(RecipientShare {
+        recipient: r1,
+        amount: 50_000,
+    });
     let id = client.create_settlement(&payer, &valid_shares, &memo);
     client.execute_settlement(&id, &payer);
 
     // Verify lifetime volume was tracked
     assert_eq!(client.get_total_volume(), 50_000);
 }
-
 
 #[test]
 fn test_token_whitelist_and_fee_calculation() {
@@ -481,7 +520,6 @@ fn test_token_whitelist_and_fee_calculation() {
     let fee = router_client.calculate_fee_amount(&100_000_000);
     assert_eq!(fee, 500_000);
 }
-
 
 #[test]
 fn test_token_pause_and_validation_defenses() {
@@ -513,7 +551,6 @@ fn test_token_pause_and_validation_defenses() {
     assert!(res.is_err());
 }
 
-
 #[test]
 fn test_dynamic_fee_tier_progression() {
     let env = Env::default();
@@ -528,7 +565,10 @@ fn test_dynamic_fee_tier_progression() {
     let payer = Address::generate(&env);
 
     // 0 volume: Standard tier (50 bps = 0.5%)
-    assert_eq!(router_client.get_payer_tier(&payer), types::FeeTier::Standard);
+    assert_eq!(
+        router_client.get_payer_tier(&payer),
+        types::FeeTier::Standard
+    );
     let fee1 = router_client.calculate_dynamic_fee(&payer, &100_000_000);
     assert_eq!(fee1, 500_000);
 
@@ -537,7 +577,6 @@ fn test_dynamic_fee_tier_progression() {
     let vip_fee = router_client.calculate_dynamic_fee(&payer, &100_000_000);
     assert_eq!(vip_fee, 100_000);
 }
-
 
 #[test]
 fn test_ecosystem_interoperability_full_cycle() {

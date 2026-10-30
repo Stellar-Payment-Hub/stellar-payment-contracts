@@ -1,3 +1,5 @@
+#![no_std]
+#![allow(clippy::too_many_arguments)]
 pub mod errors;
 pub mod events;
 pub mod storage;
@@ -44,10 +46,12 @@ impl EscrowVault {
         if buyer == seller || buyer == arbitrator || seller == arbitrator {
             return Err(EscrowError::SamePartyAddress);
         }
-        if arbitrator_fee_bps > 500 { // Max 5% arbitration fee
+        if arbitrator_fee_bps > 500 {
+            // Max 5% arbitration fee
             return Err(EscrowError::FeeExceedsCap);
         }
-        if duration_seconds < 3600 { // Minimum 1 hour
+        if duration_seconds < 3600 {
+            // Minimum 1 hour
             return Err(EscrowError::InvalidDeadline);
         }
 
@@ -91,13 +95,20 @@ impl EscrowVault {
         }
 
         storage::set_vote(&env, escrow_id, &caller, VoteDecision::ReleaseToSeller);
-        events::emit_vote_cast(&env, escrow_id, &caller, VoteDecision::ReleaseToSeller as u32);
+        events::emit_vote_cast(
+            &env,
+            escrow_id,
+            &caller,
+            VoteDecision::ReleaseToSeller as u32,
+        );
 
         // Check 2-of-3 threshold (buyer + arbitrator, or seller self-acknowledgement)
         let buyer_vote = storage::get_vote(&env, escrow_id, &esc.buyer);
         let arb_vote = storage::get_vote(&env, escrow_id, &esc.arbitrator);
 
-        if buyer_vote == VoteDecision::ReleaseToSeller || (arb_vote == VoteDecision::ReleaseToSeller && caller == esc.arbitrator) {
+        if buyer_vote == VoteDecision::ReleaseToSeller
+            || (arb_vote == VoteDecision::ReleaseToSeller && caller == esc.arbitrator)
+        {
             esc.status = EscrowStatus::Released;
             esc.remaining_amount = 0;
             storage::set_escrow(&env, escrow_id, &esc);
@@ -124,7 +135,9 @@ impl EscrowVault {
         let seller_vote = storage::get_vote(&env, escrow_id, &esc.seller);
         let arb_vote = storage::get_vote(&env, escrow_id, &esc.arbitrator);
 
-        if seller_vote == VoteDecision::RefundToBuyer || (arb_vote == VoteDecision::RefundToBuyer && caller == esc.arbitrator) {
+        if seller_vote == VoteDecision::RefundToBuyer
+            || (arb_vote == VoteDecision::RefundToBuyer && caller == esc.arbitrator)
+        {
             esc.status = EscrowStatus::Refunded;
             esc.remaining_amount = 0;
             storage::set_escrow(&env, escrow_id, &esc);
@@ -198,7 +211,11 @@ impl EscrowVault {
     }
 
     /// Claim refund after statutory deadline has passed without seller action (Buyer only).
-    pub fn claim_timelock_refund(env: Env, buyer: Address, escrow_id: u64) -> Result<(), EscrowError> {
+    pub fn claim_timelock_refund(
+        env: Env,
+        buyer: Address,
+        escrow_id: u64,
+    ) -> Result<(), EscrowError> {
         buyer.require_auth();
         let mut esc = storage::get_escrow(&env, escrow_id).ok_or(EscrowError::EscrowNotFound)?;
         if esc.buyer != buyer {
@@ -262,7 +279,8 @@ impl EscrowVault {
         if esc.seller != seller {
             return Err(EscrowError::Unauthorized);
         }
-        let mut ms = storage::get_milestone(&env, escrow_id, index).ok_or(EscrowError::MilestoneNotFound)?;
+        let mut ms =
+            storage::get_milestone(&env, escrow_id, index).ok_or(EscrowError::MilestoneNotFound)?;
         ms.evidence_hash = Some(evidence_hash.clone());
         storage::set_milestone(&env, escrow_id, index, &ms);
         events::emit_evidence_submitted(&env, escrow_id, index, &evidence_hash);
@@ -282,7 +300,8 @@ impl EscrowVault {
         if esc.buyer != buyer {
             return Err(EscrowError::Unauthorized);
         }
-        let mut ms = storage::get_milestone(&env, escrow_id, index).ok_or(EscrowError::MilestoneNotFound)?;
+        let mut ms =
+            storage::get_milestone(&env, escrow_id, index).ok_or(EscrowError::MilestoneNotFound)?;
         if ms.approved {
             return Err(EscrowError::MilestoneAlreadyApproved);
         }

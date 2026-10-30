@@ -2,7 +2,7 @@
 extern crate std;
 
 use super::*;
-use soroban_sdk::{testutils::{Address as _, Ledger as _}, Address, BytesN, Env, String};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, String};
 
 #[test]
 fn test_escrow_multisig_and_split_arbitration() {
@@ -20,7 +20,15 @@ fn test_escrow_multisig_and_split_arbitration() {
     let token = Address::generate(&env);
 
     // 1. Create escrow for 100 XLM, 2% (200 bps) arb fee, 7 days (604,800s)
-    let escrow_id = client.create_escrow(&buyer, &seller, &arbitrator, &token, &100_000_000, &200, &604_800);
+    let escrow_id = client.create_escrow(
+        &buyer,
+        &seller,
+        &arbitrator,
+        &token,
+        &100_000_000,
+        &200,
+        &604_800,
+    );
     assert_eq!(escrow_id, 1);
 
     let record = client.get_escrow(&escrow_id).unwrap();
@@ -57,7 +65,15 @@ fn test_milestone_progressive_workflow() {
     let arbitrator = Address::generate(&env);
     let token = Address::generate(&env);
 
-    let escrow_id = client.create_escrow(&buyer, &seller, &arbitrator, &token, &50_000_000, &0, &604_800);
+    let escrow_id = client.create_escrow(
+        &buyer,
+        &seller,
+        &arbitrator,
+        &token,
+        &50_000_000,
+        &0,
+        &604_800,
+    );
 
     // Add milestone 1 (20 XLM) and milestone 2 (30 XLM)
     let desc1 = String::from_str(&env, "Design Mockups");

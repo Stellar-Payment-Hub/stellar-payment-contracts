@@ -1,5 +1,5 @@
-use soroban_sdk::{contracttype, Address, Env};
 use crate::types::{HtlcRecord, MerkleDistribution};
+use soroban_sdk::{contracttype, Address, Env};
 
 #[contracttype]
 pub enum DataKey {
@@ -20,13 +20,23 @@ pub fn get_admin(env: &Env) -> Option<Address> {
 }
 
 pub fn increment_htlc_count(env: &Env) -> u64 {
-    let count: u64 = env.storage().instance().get(&DataKey::HtlcCounter).unwrap_or(0) + 1;
+    let count: u64 = env
+        .storage()
+        .instance()
+        .get(&DataKey::HtlcCounter)
+        .unwrap_or(0)
+        + 1;
     env.storage().instance().set(&DataKey::HtlcCounter, &count);
     count
 }
 
 pub fn increment_dist_count(env: &Env) -> u64 {
-    let count: u64 = env.storage().instance().get(&DataKey::DistCounter).unwrap_or(0) + 1;
+    let count: u64 = env
+        .storage()
+        .instance()
+        .get(&DataKey::DistCounter)
+        .unwrap_or(0)
+        + 1;
     env.storage().instance().set(&DataKey::DistCounter, &count);
     count
 }
@@ -40,7 +50,9 @@ pub fn get_htlc(env: &Env, id: u64) -> Option<HtlcRecord> {
 }
 
 pub fn set_dist(env: &Env, id: u64, dist: &MerkleDistribution) {
-    env.storage().persistent().set(&DataKey::Distribution(id), dist);
+    env.storage()
+        .persistent()
+        .set(&DataKey::Distribution(id), dist);
 }
 
 pub fn get_dist(env: &Env, id: u64) -> Option<MerkleDistribution> {
@@ -48,13 +60,20 @@ pub fn get_dist(env: &Env, id: u64) -> Option<MerkleDistribution> {
 }
 
 pub fn is_leaf_claimed(env: &Env, dist_id: u64, index: u32) -> bool {
-    env.storage().persistent().get(&DataKey::ClaimedLeaf(dist_id, index)).unwrap_or(false)
+    env.storage()
+        .persistent()
+        .get(&DataKey::ClaimedLeaf(dist_id, index))
+        .unwrap_or(false)
 }
 
 pub fn set_leaf_claimed(env: &Env, dist_id: u64, index: u32) {
-    env.storage().persistent().set(&DataKey::ClaimedLeaf(dist_id, index), &true);
+    env.storage()
+        .persistent()
+        .set(&DataKey::ClaimedLeaf(dist_id, index), &true);
 }
 
 pub fn extend_htlc_ttl(env: &Env, id: u64) {
-    env.storage().persistent().extend_ttl(&DataKey::Htlc(id), 50_000, 100_000);
+    env.storage()
+        .persistent()
+        .extend_ttl(&DataKey::Htlc(id), 50_000, 100_000);
 }

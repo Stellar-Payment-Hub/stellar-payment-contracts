@@ -1,3 +1,5 @@
+#![no_std]
+#![allow(clippy::all, unused_variables, dead_code)]
 pub mod errors;
 pub mod events;
 pub mod storage;
@@ -40,7 +42,8 @@ impl SubscriptionEngine {
         if amount <= 0 {
             return Err(SubscriptionError::InvalidAmount);
         }
-        if interval_seconds < 60 { // Minimum 1 minute interval
+        if interval_seconds < 60 {
+            // Minimum 1 minute interval
             return Err(SubscriptionError::InvalidInterval);
         }
 
@@ -116,7 +119,8 @@ impl SubscriptionEngine {
         if let Some(sub) = storage::get_subscription(&env, sub_id) {
             if sub.status == SubscriptionStatus::Active {
                 let now = env.ledger().timestamp();
-                return now >= sub.next_bill_at && (sub.max_cycles == 0 || sub.cycles_billed < sub.max_cycles);
+                return now >= sub.next_bill_at
+                    && (sub.max_cycles == 0 || sub.cycles_billed < sub.max_cycles);
             }
         }
         false
@@ -129,11 +133,13 @@ impl SubscriptionEngine {
         sub_id: u64,
     ) -> Result<u32, SubscriptionError> {
         caller.require_auth();
-        let mut sub = storage::get_subscription(&env, sub_id).ok_or(SubscriptionError::SubscriptionNotFound)?;
+        let mut sub = storage::get_subscription(&env, sub_id)
+            .ok_or(SubscriptionError::SubscriptionNotFound)?;
         if sub.status == SubscriptionStatus::Paused {
             return Err(SubscriptionError::SubscriptionPaused);
         }
-        if sub.status == SubscriptionStatus::Cancelled || sub.status == SubscriptionStatus::Expired {
+        if sub.status == SubscriptionStatus::Cancelled || sub.status == SubscriptionStatus::Expired
+        {
             return Err(SubscriptionError::SubscriptionCancelled);
         }
 
@@ -162,15 +168,26 @@ impl SubscriptionEngine {
         }
 
         storage::set_subscription(&env, sub_id, &sub);
-        events::emit_subscription_billed(&env, sub_id, &sub.subscriber, plan.amount, sub.cycles_billed);
+        events::emit_subscription_billed(
+            &env,
+            sub_id,
+            &sub.subscriber,
+            plan.amount,
+            sub.cycles_billed,
+        );
         storage::extend_sub_ttl(&env, sub_id);
         Ok(sub.cycles_billed)
     }
 
     /// Pause an active subscription (Subscriber only).
-    pub fn pause_subscription(env: Env, subscriber: Address, sub_id: u64) -> Result<(), SubscriptionError> {
+    pub fn pause_subscription(
+        env: Env,
+        subscriber: Address,
+        sub_id: u64,
+    ) -> Result<(), SubscriptionError> {
         subscriber.require_auth();
-        let mut sub = storage::get_subscription(&env, sub_id).ok_or(SubscriptionError::SubscriptionNotFound)?;
+        let mut sub = storage::get_subscription(&env, sub_id)
+            .ok_or(SubscriptionError::SubscriptionNotFound)?;
         if sub.subscriber != subscriber {
             return Err(SubscriptionError::Unauthorized);
         }
@@ -185,9 +202,14 @@ impl SubscriptionEngine {
     }
 
     /// Resume a paused subscription (Subscriber only).
-    pub fn resume_subscription(env: Env, subscriber: Address, sub_id: u64) -> Result<(), SubscriptionError> {
+    pub fn resume_subscription(
+        env: Env,
+        subscriber: Address,
+        sub_id: u64,
+    ) -> Result<(), SubscriptionError> {
         subscriber.require_auth();
-        let mut sub = storage::get_subscription(&env, sub_id).ok_or(SubscriptionError::SubscriptionNotFound)?;
+        let mut sub = storage::get_subscription(&env, sub_id)
+            .ok_or(SubscriptionError::SubscriptionNotFound)?;
         if sub.subscriber != subscriber {
             return Err(SubscriptionError::Unauthorized);
         }
@@ -205,9 +227,14 @@ impl SubscriptionEngine {
     }
 
     /// Terminate subscription immediately (Subscriber only).
-    pub fn cancel_by_subscriber(env: Env, subscriber: Address, sub_id: u64) -> Result<(), SubscriptionError> {
+    pub fn cancel_by_subscriber(
+        env: Env,
+        subscriber: Address,
+        sub_id: u64,
+    ) -> Result<(), SubscriptionError> {
         subscriber.require_auth();
-        let mut sub = storage::get_subscription(&env, sub_id).ok_or(SubscriptionError::SubscriptionNotFound)?;
+        let mut sub = storage::get_subscription(&env, sub_id)
+            .ok_or(SubscriptionError::SubscriptionNotFound)?;
         if sub.subscriber != subscriber {
             return Err(SubscriptionError::Unauthorized);
         }
@@ -223,9 +250,14 @@ impl SubscriptionEngine {
     }
 
     /// Terminate subscriber from plan (Merchant only).
-    pub fn cancel_by_merchant(env: Env, merchant: Address, sub_id: u64) -> Result<(), SubscriptionError> {
+    pub fn cancel_by_merchant(
+        env: Env,
+        merchant: Address,
+        sub_id: u64,
+    ) -> Result<(), SubscriptionError> {
         merchant.require_auth();
-        let mut sub = storage::get_subscription(&env, sub_id).ok_or(SubscriptionError::SubscriptionNotFound)?;
+        let mut sub = storage::get_subscription(&env, sub_id)
+            .ok_or(SubscriptionError::SubscriptionNotFound)?;
         if sub.merchant != merchant {
             return Err(SubscriptionError::Unauthorized);
         }

@@ -4,12 +4,10 @@ use soroban_sdk::{contracttype, Address, BytesN, String, Vec};
 #[contracttype]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct FeeConfig {
-    pub fee_bps: u32,       // e.g. 50 = 0.5%
-    pub max_fee_bps: u32,   // hard cap e.g. 500 = 5%
+    pub fee_bps: u32,     // e.g. 50 = 0.5%
+    pub max_fee_bps: u32, // hard cap e.g. 500 = 5%
     pub enabled: bool,
 }
-
-
 
 #[contracttype]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -104,7 +102,6 @@ pub enum AssetKind {
     CustomSorobanToken = 2,
 }
 
-
 /// Configuration for whitelisted tokens in settlement router
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -125,7 +122,6 @@ pub struct TokenFeeRecord {
     pub total_withdrawn: i128,
     pub last_withdrawn_at: u64,
 }
-
 
 #[contracttype]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

@@ -1,9 +1,16 @@
-use soroban_sdk::{symbol_short, Address, Env};
 use crate::types::StreamStatus;
+use soroban_sdk::{symbol_short, Address, Env};
 
-pub fn emit_stream_created(env: &Env, id: u64, sender: &Address, recipient: &Address, deposit: i128) {
+pub fn emit_stream_created(
+    env: &Env,
+    id: u64,
+    sender: &Address,
+    recipient: &Address,
+    deposit: i128,
+) {
     let topics = (symbol_short!("stream"), symbol_short!("create"), id);
-    env.events().publish(topics, (sender.clone(), recipient.clone(), deposit));
+    env.events()
+        .publish(topics, (sender.clone(), recipient.clone(), deposit));
 }
 
 pub fn emit_stream_withdrawn(env: &Env, id: u64, recipient: &Address, amount: i128) {

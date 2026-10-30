@@ -1,5 +1,5 @@
-use soroban_sdk::{contracttype, Address, Env};
 use crate::types::StreamRecord;
+use soroban_sdk::{contracttype, Address, Env};
 
 #[contracttype]
 pub enum DataKey {
@@ -22,12 +22,22 @@ pub fn set_paused(env: &Env, paused: bool) {
 }
 
 pub fn is_paused(env: &Env) -> bool {
-    env.storage().instance().get(&DataKey::Paused).unwrap_or(false)
+    env.storage()
+        .instance()
+        .get(&DataKey::Paused)
+        .unwrap_or(false)
 }
 
 pub fn increment_stream_count(env: &Env) -> u64 {
-    let count: u64 = env.storage().instance().get(&DataKey::StreamCounter).unwrap_or(0) + 1;
-    env.storage().instance().set(&DataKey::StreamCounter, &count);
+    let count: u64 = env
+        .storage()
+        .instance()
+        .get(&DataKey::StreamCounter)
+        .unwrap_or(0)
+        + 1;
+    env.storage()
+        .instance()
+        .set(&DataKey::StreamCounter, &count);
     count
 }
 
@@ -40,5 +50,7 @@ pub fn get_stream(env: &Env, id: u64) -> Option<StreamRecord> {
 }
 
 pub fn extend_stream_ttl(env: &Env, id: u64) {
-    env.storage().persistent().extend_ttl(&DataKey::Stream(id), 50_000, 100_000);
+    env.storage()
+        .persistent()
+        .extend_ttl(&DataKey::Stream(id), 50_000, 100_000);
 }

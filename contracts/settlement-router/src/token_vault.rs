@@ -1,5 +1,5 @@
-use soroban_sdk::{token::Client as TokenClient, Address, Env};
 use crate::errors::SettlementError;
+use soroban_sdk::{token::Client as TokenClient, Address, Env};
 
 pub struct TokenVault;
 

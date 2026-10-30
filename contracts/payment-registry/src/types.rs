@@ -86,7 +86,6 @@ pub struct PaymentDispute {
     pub resolved_at: Option<u64>,
 }
 
-
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct HubTelemetry {

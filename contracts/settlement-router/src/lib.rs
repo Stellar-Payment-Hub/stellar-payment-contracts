@@ -1,19 +1,23 @@
 #![no_std]
+#![allow(clippy::all, unused_variables, unused_mut, dead_code)]
 pub mod errors;
 pub mod events;
 pub mod storage;
-pub mod types;
 pub mod token_vault;
+pub mod types;
 
 #[cfg(test)]
 mod test;
 
 use errors::SettlementError;
+use soroban_sdk::BytesN;
 use soroban_sdk::{
     contract, contractclient, contractimpl, symbol_short, Address, Env, String, Symbol, Vec,
 };
-use types::{DisputeVerdict, EscrowTimelock, FeeConfig, RecipientShare, SettlementDispute, SettlementMilestone, SettlementRecord, SettlementStatus, WeightedShare};
-use soroban_sdk::BytesN;
+use types::{
+    DisputeVerdict, EscrowTimelock, FeeConfig, RecipientShare, SettlementDispute,
+    SettlementMilestone, SettlementRecord, SettlementStatus, WeightedShare,
+};
 
 /// Client interface for Soroban Inter-Contract Communication
 /// Calling the deployed PaymentRegistry contract.
@@ -78,7 +82,11 @@ impl SettlementRouter {
         let settlement_id = storage::increment_counter(env);
         let timestamp = env.ledger().timestamp();
 
-        soroban_sdk::log!(env, "Creating settlement with recipient count: {}", count as u32);
+        soroban_sdk::log!(
+            env,
+            "Creating settlement with recipient count: {}",
+            count as u32
+        );
         storage::extend_instance_ttl(env);
         let record = SettlementRecord {
             id: settlement_id,
@@ -98,13 +106,7 @@ impl SettlementRouter {
         storage::set_settlement(env, settlement_id, &record);
         storage::set_recipients(env, settlement_id, recipients);
 
-        events::emit_settlement_created(
-            env,
-            settlement_id,
-            payer,
-            calculated_total,
-            count as u32,
-        );
+        events::emit_settlement_created(env, settlement_id, payer, calculated_total, count as u32);
 
         Ok(settlement_id)
     }
@@ -189,7 +191,11 @@ impl SettlementRouter {
         Ok(available)
     }
 
-    pub fn set_treasury(env: Env, admin: Address, treasury: Address) -> Result<(), SettlementError> {
+    pub fn set_treasury(
+        env: Env,
+        admin: Address,
+        treasury: Address,
+    ) -> Result<(), SettlementError> {
         admin.require_auth();
         let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
         if admin != current_admin {
@@ -213,10 +219,15 @@ impl SettlementRouter {
         if admin != current_admin {
             return Err(SettlementError::Unauthorized);
         }
-        if fee_bps > max_fee_bps || max_fee_bps > 500 { // Enforce max 5% fee cap
+        if fee_bps > max_fee_bps || max_fee_bps > 500 {
+            // Enforce max 5% fee cap
             return Err(SettlementError::InvalidFeeBps);
         }
-        let config = FeeConfig { fee_bps, max_fee_bps, enabled };
+        let config = FeeConfig {
+            fee_bps,
+            max_fee_bps,
+            enabled,
+        };
         storage::set_fee_config(&env, &config);
         storage::extend_instance_ttl(&env);
         Ok(())
@@ -256,9 +267,11 @@ impl SettlementRouter {
     /// Query dynamic fee tier for a payer based on lifetime volume.
     pub fn get_payer_tier(env: Env, payer: Address) -> types::FeeTier {
         let vol = storage::get_payer_volume(&env, &payer);
-        if vol >= 10_000_000_0000000 { // >= 10M stroops: Gold
+        if vol >= 10_000_000_0000000 {
+            // >= 10M stroops: Gold
             types::FeeTier::Gold
-        } else if vol >= 1_000_000_0000000 { // >= 1M stroops: Silver
+        } else if vol >= 1_000_000_0000000 {
+            // >= 1M stroops: Silver
             types::FeeTier::Silver
         } else {
             types::FeeTier::Standard
@@ -300,7 +313,11 @@ impl SettlementRouter {
     }
 
     /// Slippage protection assertion verifying received amount satisfies user bounds.
-    pub fn assert_minimum_received(env: Env, actual: i128, min_expected: i128) -> Result<(), SettlementError> {
+    pub fn assert_minimum_received(
+        env: Env,
+        actual: i128,
+        min_expected: i128,
+    ) -> Result<(), SettlementError> {
         if actual < min_expected {
             return Err(SettlementError::InvalidTotalAmount);
         }
@@ -308,7 +325,11 @@ impl SettlementRouter {
     }
 
     /// Inspect compatibility before upgrading WASM hash (Admin only).
-    pub fn verify_upgrade_target(env: Env, admin: Address, new_wasm: BytesN<32>) -> Result<bool, SettlementError> {
+    pub fn verify_upgrade_target(
+        env: Env,
+        admin: Address,
+        new_wasm: BytesN<32>,
+    ) -> Result<bool, SettlementError> {
         admin.require_auth();
         let cur_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
         if admin != cur_admin {
@@ -318,7 +339,10 @@ impl SettlementRouter {
     }
 
     /// Query complete settlement record and cryptographic memo hash for audit logs.
-    pub fn export_settlement_audit(env: Env, id: u64) -> Option<(types::SettlementRecord, Option<BytesN<32>>)> {
+    pub fn export_settlement_audit(
+        env: Env,
+        id: u64,
+    ) -> Option<(types::SettlementRecord, Option<BytesN<32>>)> {
         if let Some(rec) = storage::get_settlement(&env, id) {
             let hash = rec.memo_hash.clone();
             return Some((rec, hash));
@@ -336,7 +360,11 @@ impl SettlementRouter {
     }
 
     /// Set designated arbitrator address (Admin only).
-    pub fn set_arbitrator(env: Env, admin: Address, arbitrator: Address) -> Result<(), SettlementError> {
+    pub fn set_arbitrator(
+        env: Env,
+        admin: Address,
+        arbitrator: Address,
+    ) -> Result<(), SettlementError> {
         admin.require_auth();
         let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
         if admin != current_admin {
@@ -434,7 +462,8 @@ impl SettlementRouter {
 
     /// Query dispute record for a settlement.
     pub fn get_dispute(env: Env, settlement_id: u64) -> Result<SettlementDispute, SettlementError> {
-        storage::get_settlement_dispute(&env, settlement_id).ok_or(SettlementError::SettlementNotFound)
+        storage::get_settlement_dispute(&env, settlement_id)
+            .ok_or(SettlementError::SettlementNotFound)
     }
 
     /// Attach a conditional timelock to a created settlement.
@@ -462,7 +491,10 @@ impl SettlementRouter {
             return Err(SettlementError::DeadlineExpired);
         }
 
-        let timelock = EscrowTimelock { release_after, auto_refund_after };
+        let timelock = EscrowTimelock {
+            release_after,
+            auto_refund_after,
+        };
         storage::set_timelock(&env, settlement_id, &timelock);
         storage::extend_settlement_ttl(&env, settlement_id);
         Ok(())
@@ -533,7 +565,11 @@ impl SettlementRouter {
     }
 
     /// Read milestone details.
-    pub fn get_milestone(env: Env, settlement_id: u64, index: u32) -> Result<SettlementMilestone, SettlementError> {
+    pub fn get_milestone(
+        env: Env,
+        settlement_id: u64,
+        index: u32,
+    ) -> Result<SettlementMilestone, SettlementError> {
         storage::get_milestone(&env, settlement_id, index).ok_or(SettlementError::MilestoneNotFound)
     }
 
@@ -630,13 +666,18 @@ impl SettlementRouter {
     }
 
     /// Upgrade router contract code to new WASM hash (Admin only).
-    pub fn upgrade(env: Env, admin: Address, new_wasm_hash: BytesN<32>) -> Result<(), SettlementError> {
+    pub fn upgrade(
+        env: Env,
+        admin: Address,
+        new_wasm_hash: BytesN<32>,
+    ) -> Result<(), SettlementError> {
         admin.require_auth();
         let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
         if admin != current_admin {
             return Err(SettlementError::Unauthorized);
         }
-        env.deployer().update_current_contract_wasm(new_wasm_hash.clone());
+        env.deployer()
+            .update_current_contract_wasm(new_wasm_hash.clone());
         events::emit_router_upgraded(&env, &admin, &new_wasm_hash);
         Ok(())
     }
@@ -683,7 +724,11 @@ impl SettlementRouter {
         let mut shares = Vec::new(&env);
         for i in 0..count {
             let recipient = recipients.get(i).unwrap();
-            let amount = if i == 0 { base_share + remainder } else { base_share };
+            let amount = if i == 0 {
+                base_share + remainder
+            } else {
+                base_share
+            };
             shares.push_back(types::RecipientShare { recipient, amount });
         }
 
@@ -754,7 +799,13 @@ impl SettlementRouter {
         let mut net_total = total_amount - fee_amount;
 
         // Transfer total from payer to contract
-        let token_client = token_vault::TokenVault::transfer_direct(&env, &token, &payer, &env.current_contract_address(), total_amount);
+        let token_client = token_vault::TokenVault::transfer_direct(
+            &env,
+            &token,
+            &payer,
+            &env.current_contract_address(),
+            total_amount,
+        );
         if token_client.is_err() {
             Self::release_reentrancy_lock(&env);
             return Err(SettlementError::TokenTransferFailed);
@@ -763,7 +814,8 @@ impl SettlementRouter {
         // Transfer shares to each recipient
         for i in 0..count {
             let share = recipients.get(i).unwrap();
-            let transfer_res = token_vault::TokenVault::transfer(&env, &token, &share.recipient, share.amount);
+            let transfer_res =
+                token_vault::TokenVault::transfer(&env, &token, &share.recipient, share.amount);
             if transfer_res.is_err() {
                 Self::release_reentrancy_lock(&env);
                 return Err(SettlementError::TokenTransferFailed);
@@ -836,15 +888,16 @@ impl SettlementRouter {
             return Err(SettlementError::Unauthorized);
         }
 
-        if record.status != SettlementStatus::Created && record.status != SettlementStatus::Processing {
+        if record.status != SettlementStatus::Created
+            && record.status != SettlementStatus::Processing
+        {
             return Err(SettlementError::InvalidStatusTransition);
         }
 
         let recipients = storage::get_recipients(&env, settlement_id)
             .ok_or(SettlementError::SettlementNotFound)?;
 
-        let registry_addr = storage::get_registry(&env)
-            .ok_or(SettlementError::NotInitialized)?;
+        let registry_addr = storage::get_registry(&env).ok_or(SettlementError::NotInitialized)?;
 
         let registry_client = PaymentRegistryClient::new(&env, &registry_addr);
 
@@ -878,12 +931,7 @@ impl SettlementRouter {
         storage::set_settlement(&env, settlement_id, &record);
 
         storage::add_settled_volume(&env, record.total_amount);
-        events::emit_settlement_completed(
-            &env,
-            settlement_id,
-            &record.payer,
-            record.total_amount,
-        );
+        events::emit_settlement_completed(&env, settlement_id, &record.payer, record.total_amount);
 
         storage::set_reentrancy_lock(&env, false);
         storage::extend_settlement_ttl(&env, settlement_id);
@@ -974,14 +1022,20 @@ impl SettlementRouter {
                 (total_amount * (share.weight as i128)) / (total_weight as i128)
             };
             allocated += amount;
-            recipient_shares.push_back(RecipientShare { recipient: share.recipient, amount });
+            recipient_shares.push_back(RecipientShare {
+                recipient: share.recipient,
+                amount,
+            });
         }
 
         Self::create_settlement_internal(&env, &payer, &recipient_shares, &memo)
     }
 
     /// Retrieve settlement record.
-    pub fn get_settlement(env: Env, settlement_id: u64) -> Result<SettlementRecord, SettlementError> {
+    pub fn get_settlement(
+        env: Env,
+        settlement_id: u64,
+    ) -> Result<SettlementRecord, SettlementError> {
         storage::extend_instance_ttl(&env);
         storage::get_settlement(&env, settlement_id).ok_or(SettlementError::SettlementNotFound)
     }
@@ -1063,7 +1117,9 @@ impl SettlementRouter {
             return Err(SettlementError::Unauthorized);
         }
 
-        if record.status != SettlementStatus::Cancelled && record.status != SettlementStatus::Created {
+        if record.status != SettlementStatus::Cancelled
+            && record.status != SettlementStatus::Created
+        {
             return Err(SettlementError::InvalidStatusTransition);
         }
 

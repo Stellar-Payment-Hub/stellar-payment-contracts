@@ -1,5 +1,5 @@
-use soroban_sdk::{contracttype, Address, Env};
 use crate::types::Payment;
+use soroban_sdk::{contracttype, Address, Env};
 
 #[contracttype]
 #[derive(Clone)]
@@ -39,9 +39,10 @@ pub fn get_payment(env: &Env, id: u64) -> Option<Payment> {
 }
 
 pub fn set_payment(env: &Env, id: u64, payment: &Payment) {
-    env.storage().persistent().set(&DataKey::Payment(id), payment);
+    env.storage()
+        .persistent()
+        .set(&DataKey::Payment(id), payment);
 }
-
 
 pub fn has_role(env: &Env, account: &Address, role: crate::types::Role) -> bool {
     let key = DataKey::Role(account.clone(), role as u32);
@@ -58,7 +59,10 @@ pub fn set_role(env: &Env, account: &Address, role: crate::types::Role, enabled:
 }
 
 pub fn is_paused(env: &Env) -> bool {
-    env.storage().instance().get(&DataKey::Paused).unwrap_or(false)
+    env.storage()
+        .instance()
+        .get(&DataKey::Paused)
+        .unwrap_or(false)
 }
 
 pub fn set_paused(env: &Env, paused: bool) {
@@ -66,19 +70,25 @@ pub fn set_paused(env: &Env, paused: bool) {
 }
 
 const INSTANCE_BUMP_THRESHOLD: u32 = 17280; // ~1 day in ledgers (5s/ledger)
-const INSTANCE_LIFETIME: u32 = 120960;      // ~7 days in ledgers
+const INSTANCE_LIFETIME: u32 = 120960; // ~7 days in ledgers
 
 pub fn extend_instance_ttl(env: &Env) {
-    env.storage().instance().extend_ttl(INSTANCE_BUMP_THRESHOLD, INSTANCE_LIFETIME);
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_BUMP_THRESHOLD, INSTANCE_LIFETIME);
 }
 
 pub fn extend_payment_ttl(env: &Env, id: u64) {
     let key = DataKey::Payment(id);
-    env.storage().persistent().extend_ttl(&key, INSTANCE_BUMP_THRESHOLD, INSTANCE_LIFETIME);
+    env.storage()
+        .persistent()
+        .extend_ttl(&key, INSTANCE_BUMP_THRESHOLD, INSTANCE_LIFETIME);
 }
 
 pub fn set_audit_log(env: &Env, id: u64, log: &crate::types::PaymentAuditLog) {
-    env.storage().persistent().set(&DataKey::PaymentAudit(id), log);
+    env.storage()
+        .persistent()
+        .set(&DataKey::PaymentAudit(id), log);
 }
 
 pub fn get_audit_log(env: &Env, id: u64) -> Option<crate::types::PaymentAuditLog> {
@@ -86,37 +96,57 @@ pub fn get_audit_log(env: &Env, id: u64) -> Option<crate::types::PaymentAuditLog
 }
 
 pub fn is_reentrancy_locked(env: &Env) -> bool {
-    env.storage().instance().get(&DataKey::ReentrancyLocked).unwrap_or(false)
+    env.storage()
+        .instance()
+        .get(&DataKey::ReentrancyLocked)
+        .unwrap_or(false)
 }
 
 pub fn set_reentrancy_lock(env: &Env, locked: bool) {
-    env.storage().instance().set(&DataKey::ReentrancyLocked, &locked);
+    env.storage()
+        .instance()
+        .set(&DataKey::ReentrancyLocked, &locked);
 }
 
 pub fn get_nonce(env: &Env, account: &Address) -> u64 {
-    env.storage().instance().get(&DataKey::Nonce(account.clone())).unwrap_or(0)
+    env.storage()
+        .instance()
+        .get(&DataKey::Nonce(account.clone()))
+        .unwrap_or(0)
 }
 
 pub fn increment_nonce(env: &Env, account: &Address) -> u64 {
     let next = get_nonce(env, account) + 1;
-    env.storage().instance().set(&DataKey::Nonce(account.clone()), &next);
+    env.storage()
+        .instance()
+        .set(&DataKey::Nonce(account.clone()), &next);
     next
 }
 
 pub fn get_dispute(env: &Env, payment_id: u64) -> Option<crate::types::PaymentDispute> {
-    env.storage().persistent().get(&DataKey::PaymentDispute(payment_id))
+    env.storage()
+        .persistent()
+        .get(&DataKey::PaymentDispute(payment_id))
 }
 
 pub fn set_dispute(env: &Env, payment_id: u64, dispute: &crate::types::PaymentDispute) {
-    env.storage().persistent().set(&DataKey::PaymentDispute(payment_id), dispute);
+    env.storage()
+        .persistent()
+        .set(&DataKey::PaymentDispute(payment_id), dispute);
 }
 
-
 pub fn set_blacklist(env: &Env, account: &Address, blacklisted: bool) {
-    env.storage().persistent().set(&DataKey::Blacklist(account.clone()), &blacklisted);
-    env.storage().persistent().extend_ttl(&DataKey::Blacklist(account.clone()), 50_000, 100_000);
+    env.storage()
+        .persistent()
+        .set(&DataKey::Blacklist(account.clone()), &blacklisted);
+    env.storage()
+        .persistent()
+        .extend_ttl(&DataKey::Blacklist(account.clone()), 50_000, 100_000);
 }
 
 pub fn is_blacklisted(env: &Env, account: &Address) -> bool {
-    env.storage().persistent().get(&DataKey::Blacklist(account.clone())).unwrap_or(false)
+    env.storage()
+        .persistent()
+        .get(&DataKey::Blacklist(account.clone()))
+        .unwrap_or(false)
 }

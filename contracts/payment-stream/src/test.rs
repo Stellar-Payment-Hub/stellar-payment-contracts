@@ -2,7 +2,10 @@
 extern crate std;
 
 use super::*;
-use soroban_sdk::{testutils::{Address as _, Ledger as _}, Address, Env};
+use soroban_sdk::{
+    testutils::{Address as _, Ledger as _},
+    Address, Env,
+};
 
 #[test]
 fn test_payment_stream_accrual_and_withdrawal() {

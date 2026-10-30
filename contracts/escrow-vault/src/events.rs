@@ -1,9 +1,10 @@
-use soroban_sdk::{symbol_short, Address, BytesN, Env};
 use crate::types::EscrowStatus;
+use soroban_sdk::{symbol_short, Address, BytesN, Env};
 
 pub fn emit_escrow_created(env: &Env, id: u64, buyer: &Address, seller: &Address, amount: i128) {
     let topics = (symbol_short!("escrow"), symbol_short!("created"), id);
-    env.events().publish(topics, (buyer.clone(), seller.clone(), amount));
+    env.events()
+        .publish(topics, (buyer.clone(), seller.clone(), amount));
 }
 
 pub fn emit_vote_cast(env: &Env, id: u64, voter: &Address, decision: u32) {
