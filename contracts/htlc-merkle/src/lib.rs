@@ -236,6 +236,23 @@ impl HtlcMerkleVault {
         Ok(amount)
     }
 
+    /// Reclaim unspent tokens after Merkle distribution expiration (Distributor only).
+    pub fn reclaim_unspent_merkle(env: Env, distributor: Address, dist_id: u64) -> Result<i128, HtlcError> {
+        distributor.require_auth();
+        let mut dist = storage::get_dist(&env, dist_id).ok_or(HtlcError::DistributionNotFound)?;
+        if dist.distributor != distributor {
+            return Err(HtlcError::Unauthorized);
+        }
+        let now = env.ledger().timestamp();
+        if now < dist.expires_at {
+            return Err(HtlcError::DistributionNotExpired);
+        }
+        let unspent = dist.remaining_amount;
+        dist.remaining_amount = 0;
+        storage::set_dist(&env, dist_id, &dist);
+        Ok(unspent)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("htlc_ok")
     }
