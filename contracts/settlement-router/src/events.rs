@@ -75,3 +75,19 @@ pub fn emit_milestone_released(env: &Env, settlement_id: u64, index: u32, amount
     let topics = (soroban_sdk::symbol_short!("milestone"), settlement_id);
     env.events().publish(topics, (index, amount));
 }
+
+
+pub fn emit_token_whitelist_updated(env: &Env, token: &Address, enabled: bool, min_deposit: i128) {
+    let topics = (soroban_sdk::symbol_short!("token_wl"), token.clone());
+    env.events().publish(topics, (enabled, min_deposit));
+}
+
+pub fn emit_protocol_fee_collected(env: &Env, settlement_id: u64, token: &Address, fee_amount: i128) {
+    let topics = (soroban_sdk::symbol_short!("fee_col"), settlement_id, token.clone());
+    env.events().publish(topics, fee_amount);
+}
+
+pub fn emit_fee_withdrawn(env: &Env, token: &Address, recipient: &Address, amount: i128) {
+    let topics = (soroban_sdk::symbol_short!("fee_wd"), token.clone(), recipient.clone());
+    env.events().publish(topics, amount);
+}
