@@ -151,6 +151,42 @@ impl EscrowVault {
         Ok(())
     }
 
+    /// Adjudicate partial split award between buyer and seller (Arbitrator only).
+    pub fn resolve_split_award(
+        env: Env,
+        arbitrator: Address,
+        escrow_id: u64,
+        buyer_amount: i128,
+        seller_amount: i128,
+    ) -> Result<i128, EscrowError> {
+        arbitrator.require_auth();
+        let mut esc = storage::get_escrow(&env, escrow_id).ok_or(EscrowError::EscrowNotFound)?;
+        if esc.arbitrator != arbitrator {
+            return Err(EscrowError::Unauthorized);
+        }
+        if esc.status != EscrowStatus::Disputed {
+            return Err(EscrowError::EscrowNotActive);
+        }
+
+        let arb_fee = if esc.arbitrator_fee_bps > 0 {
+            (esc.remaining_amount * esc.arbitrator_fee_bps as i128) / 10000
+        } else {
+            0
+        };
+
+        let distributable = esc.remaining_amount - arb_fee;
+        if buyer_amount + seller_amount != distributable {
+            return Err(EscrowError::InvalidSplitSum);
+        }
+
+        esc.status = EscrowStatus::PartiallySettled;
+        esc.remaining_amount = 0;
+        storage::set_escrow(&env, escrow_id, &esc);
+        events::emit_escrow_status(&env, escrow_id, EscrowStatus::PartiallySettled);
+        storage::extend_escrow_ttl(&env, escrow_id);
+        Ok(arb_fee)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("escrow_ok")
     }
