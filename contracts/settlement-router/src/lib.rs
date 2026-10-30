@@ -265,6 +265,20 @@ impl SettlementRouter {
         }
     }
 
+    /// Calculate effective protocol fee applying volume tier discounts and VIP overrides.
+    pub fn calculate_dynamic_fee(env: Env, payer: Address, amount: i128) -> i128 {
+        if let Some(vip) = storage::get_vip_discount(&env, &payer) {
+            return (amount * vip as i128) / 10000;
+        }
+        let tier = Self::get_payer_tier(env.clone(), payer);
+        let fee_bps: u32 = match tier {
+            types::FeeTier::Gold => 15,     // 0.15%
+            types::FeeTier::Silver => 30,   // 0.30%
+            types::FeeTier::Standard => 50, // 0.50%
+        };
+        (amount * fee_bps as i128) / 10000
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("settle_ok")
     }
