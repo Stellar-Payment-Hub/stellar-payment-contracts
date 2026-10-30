@@ -82,3 +82,17 @@ pub fn is_paused(env: &Env) -> bool {
 pub fn set_paused(env: &Env, paused: bool) {
     env.storage().instance().set(&DataKey::Paused, &paused);
 }
+
+const INSTANCE_BUMP_THRESHOLD: u32 = 17280;
+const INSTANCE_LIFETIME: u32 = 120960;
+
+pub fn extend_instance_ttl(env: &Env) {
+    env.storage().instance().extend_ttl(INSTANCE_BUMP_THRESHOLD, INSTANCE_LIFETIME);
+}
+
+pub fn extend_settlement_ttl(env: &Env, id: u64) {
+    let key = DataKey::Settlement(id);
+    env.storage().persistent().extend_ttl(&key, INSTANCE_BUMP_THRESHOLD, INSTANCE_LIFETIME);
+    let rec_key = DataKey::Recipients(id);
+    env.storage().persistent().extend_ttl(&rec_key, INSTANCE_BUMP_THRESHOLD, INSTANCE_LIFETIME);
+}
