@@ -11,7 +11,8 @@ use errors::SettlementError;
 use soroban_sdk::{
     contract, contractclient, contractimpl, symbol_short, Address, Env, String, Symbol, Vec,
 };
-use types::{RecipientShare, SettlementRecord, SettlementStatus};
+use types::{FeeConfig, RecipientShare, SettlementMilestone, SettlementRecord, SettlementStatus, WeightedShare};
+use soroban_sdk::{token, BytesN};
 
 /// Client interface for Soroban Inter-Contract Communication
 /// Calling the deployed PaymentRegistry contract.
