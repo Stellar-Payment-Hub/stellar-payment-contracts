@@ -114,6 +114,14 @@ impl PaymentStream {
         available.max(0).min(stream.deposit_amount - stream.withdrawn_amount)
     }
 
+    /// Query whether cliff period has been unlocked.
+    pub fn is_cliff_passed(env: Env, id: u64) -> bool {
+        if let Some(s) = storage::get_stream(&env, id) {
+            return s.cliff_time == 0 || env.ledger().timestamp() >= s.cliff_time;
+        }
+        false
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("stream_ok")
     }
