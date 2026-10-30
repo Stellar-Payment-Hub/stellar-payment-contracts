@@ -374,6 +374,11 @@ impl PaymentRegistry {
         storage::get_dispute(&env, payment_id).ok_or(ContractError::DisputeNotFound)
     }
 
+    /// Read audit transition log for a payment record.
+    pub fn get_audit_log(env: Env, id: u64) -> Result<PaymentAuditLog, ContractError> {
+        storage::get_audit_log(&env, id).ok_or(ContractError::PaymentNotFound)
+    }
+
     /// Read a payment record by ID.
     pub fn get_payment(env: Env, id: u64) -> Result<Payment, ContractError> {
         storage::extend_instance_ttl(&env);
@@ -443,11 +448,20 @@ impl PaymentRegistry {
             }
         }
 
+        let prev = payment.status;
         let timestamp = env.ledger().timestamp();
         payment.status = new_status;
         payment.updated_at = timestamp;
 
         storage::set_payment(&env, id, &payment);
+        let audit = PaymentAuditLog {
+            payment_id: id,
+            previous_status: prev,
+            new_status,
+            transitioned_by: caller.clone(),
+            timestamp,
+        };
+        storage::set_audit_log(&env, id, &audit);
         events::emit_payment_updated(&env, id, new_status, timestamp);
 
         if new_status == PaymentStatus::Completed {
