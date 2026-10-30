@@ -93,3 +93,13 @@ pub struct SettlementDispute {
     pub initiated_at: u64,
     pub resolved_at: Option<u64>,
 }
+
+/// Asset representation type for multi-token support
+#[contracttype]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum AssetKind {
+    Native = 0,
+    ClassicWrapped = 1,
+    CustomSorobanToken = 2,
+}
