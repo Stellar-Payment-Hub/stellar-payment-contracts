@@ -526,6 +526,103 @@ impl SettlementRouter {
 
     /// Execute settlement: Invokes the PaymentRegistry contract for each recipient
     /// (Inter-contract communication) and marks settlement completed.
+    /// Execute a multi-recipient settlement using a whitelisted SEP-41 Soroban token.
+    pub fn execute_token_settlement(
+        env: Env,
+        payer: Address,
+        token: Address,
+        recipients: Vec<types::RecipientShare>,
+        memo: String,
+    ) -> Result<u64, SettlementError> {
+        if storage::is_paused(&env) || storage::is_token_paused(&env) {
+            return Err(SettlementError::ContractPaused);
+        }
+        if !storage::is_token_whitelisted(&env, &token) {
+            return Err(SettlementError::TokenNotWhitelisted);
+        }
+        payer.require_auth();
+
+        Self::acquire_reentrancy_lock(&env)?;
+
+        let count = recipients.len();
+        if count == 0 {
+            Self::release_reentrancy_lock(&env);
+            return Err(SettlementError::EmptyRecipients);
+        }
+
+        let mut total_amount: i128 = 0;
+        for i in 0..count {
+            let share = recipients.get(i).unwrap();
+            if share.amount <= 0 {
+                Self::release_reentrancy_lock(&env);
+                return Err(SettlementError::InvalidShareAmount);
+            }
+            if &share.recipient == &payer {
+                Self::release_reentrancy_lock(&env);
+                return Err(SettlementError::PayerIsRecipient);
+            }
+            total_amount += share.amount;
+        }
+
+        let token_cfg = storage::get_token_config(&env, &token).unwrap();
+        if total_amount < token_cfg.min_deposit {
+            Self::release_reentrancy_lock(&env);
+            return Err(SettlementError::InvalidTotalAmount);
+        }
+
+        let fee_amount = Self::calculate_fee_amount(env.clone(), total_amount);
+        let mut net_total = total_amount - fee_amount;
+
+        // Transfer total from payer to contract
+        let token_client = token_vault::TokenVault::transfer_direct(&env, &token, &payer, &env.current_contract_address(), total_amount);
+        if token_client.is_err() {
+            Self::release_reentrancy_lock(&env);
+            return Err(SettlementError::TokenTransferFailed);
+        }
+
+        // Transfer shares to each recipient
+        for i in 0..count {
+            let share = recipients.get(i).unwrap();
+            let transfer_res = token_vault::TokenVault::transfer(&env, &token, &share.recipient, share.amount);
+            if transfer_res.is_err() {
+                Self::release_reentrancy_lock(&env);
+                return Err(SettlementError::TokenTransferFailed);
+            }
+        }
+
+        // Record and route fee if applicable
+        if fee_amount > 0 {
+            let mut fee_record = storage::get_token_fees(&env, &token);
+            fee_record.total_collected += fee_amount;
+            storage::set_token_fees(&env, &token, &fee_record);
+            let settlement_id = storage::increment_counter(&env);
+            events::emit_protocol_fee_collected(&env, settlement_id, &token, fee_amount);
+        }
+
+        let settlement_id = storage::increment_counter(&env);
+        let now = env.ledger().timestamp();
+        let record = types::SettlementRecord {
+            id: settlement_id,
+            payer: payer.clone(),
+            token: Some(token.clone()),
+            total_amount,
+            fee_amount,
+            recipient_count: count as u32,
+            memo: memo.clone(),
+            memo_hash: None,
+            status: types::SettlementStatus::Completed,
+            sub_payment_ids: Vec::new(&env),
+            created_at: now,
+            updated_at: now,
+        };
+        storage::set_settlement(&env, settlement_id, &record);
+        storage::add_settled_volume(&env, total_amount);
+        events::emit_settlement_completed(&env, settlement_id, &payer, total_amount);
+
+        Self::release_reentrancy_lock(&env);
+        Ok(settlement_id)
+    }
+
     pub fn execute_settlement(
         env: Env,
         settlement_id: u64,
