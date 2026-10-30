@@ -11,7 +11,7 @@ use errors::SettlementError;
 use soroban_sdk::{
     contract, contractclient, contractimpl, symbol_short, Address, Env, String, Symbol, Vec,
 };
-use types::{FeeConfig, RecipientShare, SettlementMilestone, SettlementRecord, SettlementStatus, WeightedShare};
+use types::{DisputeVerdict, EscrowTimelock, FeeConfig, RecipientShare, SettlementDispute, SettlementMilestone, SettlementRecord, SettlementStatus, WeightedShare};
 use soroban_sdk::{token, BytesN};
 
 /// Client interface for Soroban Inter-Contract Communication
@@ -159,6 +159,108 @@ impl SettlementRouter {
     /// Read contract health/status symbol.
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("settle_ok")
+    }
+
+    /// Set designated arbitrator address (Admin only).
+    pub fn set_arbitrator(env: Env, admin: Address, arbitrator: Address) -> Result<(), SettlementError> {
+        admin.require_auth();
+        let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
+        if admin != current_admin {
+            return Err(SettlementError::Unauthorized);
+        }
+        storage::set_arbitrator(&env, &arbitrator);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// Read designated arbitrator address.
+    pub fn get_arbitrator(env: Env) -> Option<Address> {
+        storage::get_arbitrator(&env)
+    }
+
+    /// Raise a dispute against an active settlement with cryptographic evidence hash.
+    pub fn raise_dispute(
+        env: Env,
+        caller: Address,
+        settlement_id: u64,
+        evidence_hash: BytesN<32>,
+    ) -> Result<(), SettlementError> {
+        caller.require_auth();
+
+        let record = storage::get_settlement(&env, settlement_id)
+            .ok_or(SettlementError::SettlementNotFound)?;
+
+        if record.payer != caller {
+            return Err(SettlementError::Unauthorized);
+        }
+        if record.status != SettlementStatus::Created {
+            return Err(SettlementError::InvalidStatusTransition);
+        }
+        if storage::get_settlement_dispute(&env, settlement_id).is_some() {
+            return Err(SettlementError::DisputeActive);
+        }
+
+        let now = env.ledger().timestamp();
+        let dispute = SettlementDispute {
+            settlement_id,
+            initiator: caller.clone(),
+            evidence_hash: evidence_hash.clone(),
+            verdict: DisputeVerdict::Pending,
+            initiated_at: now,
+            resolved_at: None,
+        };
+
+        storage::set_settlement_dispute(&env, settlement_id, &dispute);
+        storage::extend_settlement_ttl(&env, settlement_id);
+        events::emit_dispute_raised(&env, settlement_id, &caller, &evidence_hash);
+        Ok(())
+    }
+
+    /// Adjudicate and resolve a disputed settlement (Arbitrator only).
+    pub fn resolve_dispute(
+        env: Env,
+        caller: Address,
+        settlement_id: u64,
+        verdict: DisputeVerdict,
+    ) -> Result<(), SettlementError> {
+        caller.require_auth();
+
+        let arbitrator = storage::get_arbitrator(&env).ok_or(SettlementError::Unauthorized)?;
+        if caller != arbitrator {
+            return Err(SettlementError::Unauthorized);
+        }
+
+        let mut dispute = storage::get_settlement_dispute(&env, settlement_id)
+            .ok_or(SettlementError::SettlementNotFound)?;
+
+        let mut record = storage::get_settlement(&env, settlement_id)
+            .ok_or(SettlementError::SettlementNotFound)?;
+
+        let now = env.ledger().timestamp();
+        dispute.verdict = verdict;
+        dispute.resolved_at = Some(now);
+        storage::set_settlement_dispute(&env, settlement_id, &dispute);
+
+        match verdict {
+            DisputeVerdict::RefundPayer => {
+                record.status = SettlementStatus::Cancelled;
+                record.updated_at = now;
+                storage::set_settlement(&env, settlement_id, &record);
+            }
+            _ => {
+                record.updated_at = now;
+                storage::set_settlement(&env, settlement_id, &record);
+            }
+        }
+
+        events::emit_dispute_resolved(&env, settlement_id, verdict as u32);
+        storage::extend_settlement_ttl(&env, settlement_id);
+        Ok(())
+    }
+
+    /// Query dispute record for a settlement.
+    pub fn get_dispute(env: Env, settlement_id: u64) -> Result<SettlementDispute, SettlementError> {
+        storage::get_settlement_dispute(&env, settlement_id).ok_or(SettlementError::SettlementNotFound)
     }
 
     /// Pause router operations (Admin only).
