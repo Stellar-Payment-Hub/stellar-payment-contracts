@@ -27,4 +27,11 @@ pub enum SettlementError {
     DeadlineNotPassed = 21,
     MilestoneNotFound = 22,
     MilestoneAlreadyExecuted = 23,
+    InsufficientAllowance = 24,
+    InsufficientTokenBalance = 25,
+    TokenNotWhitelisted = 26,
+    ZeroTokenAmount = 27,
+    FeeExceedsCap = 28,
+    TokenTransferFailed = 29,
+    ContractReentrancy = 30,
 }
