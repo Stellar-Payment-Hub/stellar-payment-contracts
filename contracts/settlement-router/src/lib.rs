@@ -65,6 +65,7 @@ impl SettlementRouter {
         let settlement_id = storage::increment_counter(env);
         let timestamp = env.ledger().timestamp();
 
+        soroban_sdk::log!(env, "Creating settlement with recipient count: {}", count as u32);
         storage::extend_instance_ttl(env);
         let record = SettlementRecord {
             id: settlement_id,
