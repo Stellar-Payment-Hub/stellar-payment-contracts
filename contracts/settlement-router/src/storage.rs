@@ -21,6 +21,8 @@ pub enum DataKey {
     TokenWhitelist(Address),
     TokenFees(Address),
     TokenPaused,
+    PayerVolume(Address),
+    VipDiscount(Address),
 }
 
 pub fn set_admin(env: &Env, admin: &Address) {
@@ -203,4 +205,23 @@ pub fn set_token_fees(env: &Env, token: &Address, record: &TokenFeeRecord) {
 pub fn extend_token_ttl(env: &Env, token: &Address) {
     env.storage().persistent().extend_ttl(&DataKey::TokenWhitelist(token.clone()), 50_000, 100_000);
     env.storage().persistent().extend_ttl(&DataKey::TokenFees(token.clone()), 50_000, 100_000);
+}
+
+
+pub fn add_payer_volume(env: &Env, payer: &Address, amount: i128) {
+    let current: i128 = env.storage().persistent().get(&DataKey::PayerVolume(payer.clone())).unwrap_or(0);
+    env.storage().persistent().set(&DataKey::PayerVolume(payer.clone()), &(current + amount));
+    env.storage().persistent().extend_ttl(&DataKey::PayerVolume(payer.clone()), 50_000, 100_000);
+}
+
+pub fn get_payer_volume(env: &Env, payer: &Address) -> i128 {
+    env.storage().persistent().get(&DataKey::PayerVolume(payer.clone())).unwrap_or(0)
+}
+
+pub fn set_vip_discount(env: &Env, partner: &Address, discount_bps: u32) {
+    env.storage().persistent().set(&DataKey::VipDiscount(partner.clone()), &discount_bps);
+}
+
+pub fn get_vip_discount(env: &Env, partner: &Address) -> Option<u32> {
+    env.storage().persistent().get(&DataKey::VipDiscount(partner.clone()))
 }
