@@ -112,6 +112,29 @@ impl HtlcMerkleVault {
         Ok(record.amount)
     }
 
+    /// Refund HTLC tokens back to sender after timelock has expired without claim.
+    pub fn refund_htlc(env: Env, sender: Address, id: u64) -> Result<i128, HtlcError> {
+        sender.require_auth();
+        let mut record = storage::get_htlc(&env, id).ok_or(HtlcError::HtlcNotFound)?;
+        if record.sender != sender {
+            return Err(HtlcError::Unauthorized);
+        }
+        if record.status != HtlcStatus::Active {
+            return Err(HtlcError::HtlcNotActive);
+        }
+
+        let now = env.ledger().timestamp();
+        if now < record.timelock {
+            return Err(HtlcError::TimelockNotExpired);
+        }
+
+        record.status = HtlcStatus::Refunded;
+        storage::set_htlc(&env, id, &record);
+        events::emit_htlc_refunded(&env, id, &sender);
+        storage::extend_htlc_ttl(&env, id);
+        Ok(record.amount)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("htlc_ok")
     }
