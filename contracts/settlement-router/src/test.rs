@@ -381,3 +381,40 @@ fn test_dispute_initiation_and_arbitrator_resolution() {
     let record = client.get_settlement(&settle_id);
     assert_eq!(record.status, SettlementStatus::Cancelled);
 }
+
+#[test]
+fn test_milestone_progressive_release() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let registry_id = env.register(PaymentRegistry, ());
+    let contract_id = env.register(SettlementRouter, ());
+    let client = SettlementRouterClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    client.initialize(&admin, &registry_id);
+
+    let payer = Address::generate(&env);
+    let r1 = Address::generate(&env);
+    let mut shares = Vec::new(&env);
+    shares.push_back(RecipientShare { recipient: r1, amount: 200_000 });
+
+    let memo = String::from_str(&env, "Project Alpha Escrow");
+    let settle_id = client.create_settlement(&payer, &shares, &memo);
+
+    let desc1 = String::from_str(&env, "Sprint 1 Deliverable");
+    client.add_milestone(&payer, &settle_id, &1, &desc1, &100_000);
+
+    let m1 = client.get_milestone(&settle_id, &1);
+    assert_eq!(m1.executed, false);
+    assert_eq!(m1.amount, 100_000);
+
+    // Release milestone 1
+    client.release_milestone(&payer, &settle_id, &1);
+    let m1_after = client.get_milestone(&settle_id, &1);
+    assert_eq!(m1_after.executed, true);
+
+    // Double release must fail
+    let err = client.try_release_milestone(&payer, &settle_id, &1);
+    assert_eq!(err, Err(Ok(SettlementError::MilestoneAlreadyExecuted)));
+}
