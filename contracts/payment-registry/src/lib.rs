@@ -56,6 +56,38 @@ impl PaymentRegistry {
         storage::has_role(&env, &account, role)
     }
 
+    /// Pause the contract operations in an emergency (Admin or Operator).
+    pub fn pause(env: Env, caller: Address) -> Result<(), ContractError> {
+        caller.require_auth();
+        let is_admin = storage::get_admin(&env).map(|a| a == caller).unwrap_or(false);
+        let is_operator = storage::has_role(&env, &caller, Role::Operator);
+        if !is_admin && !is_operator {
+            return Err(ContractError::Unauthorized);
+        }
+        storage::set_paused(&env, true);
+        events::emit_pause_toggled(&env, true, &caller);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// Unpause contract operations (Admin only).
+    pub fn unpause(env: Env, caller: Address) -> Result<(), ContractError> {
+        caller.require_auth();
+        let is_admin = storage::get_admin(&env).map(|a| a == caller).unwrap_or(false);
+        if !is_admin {
+            return Err(ContractError::Unauthorized);
+        }
+        storage::set_paused(&env, false);
+        events::emit_pause_toggled(&env, false, &caller);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// Check if the contract is currently paused.
+    pub fn is_paused(env: Env) -> bool {
+        storage::is_paused(&env)
+    }
+
     /// Read contract status and availability.
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("ready")

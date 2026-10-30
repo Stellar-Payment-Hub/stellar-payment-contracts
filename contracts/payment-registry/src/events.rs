@@ -36,3 +36,8 @@ pub fn emit_role_revoked(env: &Env, account: &Address, role: crate::types::Role)
     let topics = (soroban_sdk::symbol_short!("role"), soroban_sdk::symbol_short!("revoked"));
     env.events().publish(topics, (account.clone(), role as u32));
 }
+
+pub fn emit_pause_toggled(env: &Env, paused: bool, caller: &Address) {
+    let topics = (soroban_sdk::symbol_short!("circuit"), soroban_sdk::symbol_short!("pause"));
+    env.events().publish(topics, (paused, caller.clone()));
+}
