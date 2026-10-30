@@ -125,3 +125,13 @@ pub struct TokenFeeRecord {
     pub total_withdrawn: i128,
     pub last_withdrawn_at: u64,
 }
+
+
+#[contracttype]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum FeeTier {
+    Standard = 0, // 50 bps
+    Silver = 1,   // 30 bps
+    Gold = 2,     // 15 bps
+}
