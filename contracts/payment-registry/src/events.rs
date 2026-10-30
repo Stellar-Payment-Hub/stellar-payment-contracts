@@ -66,3 +66,9 @@ pub fn emit_dispute_opened(env: &Env, payment_id: u64, initiator: &Address) {
     let topics = (soroban_sdk::symbol_short!("dispute"), soroban_sdk::symbol_short!("opened"));
     env.events().publish(topics, (payment_id, initiator.clone()));
 }
+
+
+pub fn emit_sanctions_hit(env: &Env, account: &Address, reason: &soroban_sdk::String) {
+    let topics = (soroban_sdk::symbol_short!("sanction"), account.clone());
+    env.events().publish(topics, reason.clone());
+}
