@@ -63,3 +63,15 @@ pub fn is_paused(env: &Env) -> bool {
 pub fn set_paused(env: &Env, paused: bool) {
     env.storage().instance().set(&DataKey::Paused, &paused);
 }
+
+const INSTANCE_BUMP_THRESHOLD: u32 = 17280; // ~1 day in ledgers (5s/ledger)
+const INSTANCE_LIFETIME: u32 = 120960;      // ~7 days in ledgers
+
+pub fn extend_instance_ttl(env: &Env) {
+    env.storage().instance().extend_ttl(INSTANCE_BUMP_THRESHOLD, INSTANCE_LIFETIME);
+}
+
+pub fn extend_payment_ttl(env: &Env, id: u64) {
+    let key = DataKey::Payment(id);
+    env.storage().persistent().extend_ttl(&key, INSTANCE_BUMP_THRESHOLD, INSTANCE_LIFETIME);
+}
