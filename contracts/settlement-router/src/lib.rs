@@ -32,6 +32,18 @@ pub trait PaymentRegistryInterface {
 pub struct SettlementRouter;
 
 impl SettlementRouter {
+    fn acquire_reentrancy_lock(env: &Env) -> Result<(), SettlementError> {
+        if storage::is_reentrancy_locked(env) {
+            return Err(SettlementError::ReentrancyGuard);
+        }
+        storage::set_reentrancy_lock(env, true);
+        Ok(())
+    }
+
+    fn release_reentrancy_lock(env: &Env) {
+        storage::set_reentrancy_lock(env, false);
+    }
+
     fn create_settlement_internal(
         env: &Env,
         payer: &Address,
