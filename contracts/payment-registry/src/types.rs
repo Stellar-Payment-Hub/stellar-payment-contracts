@@ -30,8 +30,12 @@ pub struct Payment {
     pub creator: Address,
     pub recipient: Address,
     pub amount: i128,
+    pub token: Option<Address>,
+    pub category: PaymentCategory,
     pub memo: String,
+    pub memo_hash: Option<BytesN<32>>,
     pub status: PaymentStatus,
+    pub deadline: Option<u64>,
     pub created_at: u64,
     pub updated_at: u64,
 }
