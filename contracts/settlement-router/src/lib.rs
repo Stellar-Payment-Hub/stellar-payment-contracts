@@ -571,8 +571,10 @@ impl SettlementRouter {
 
     /// Read a paginated list of settlement records.
     pub fn paginate_settlements(env: Env, start_id: u64, limit: u32) -> Vec<SettlementRecord> {
-        storage::extend_instance_ttl(&env);
         let total = storage::get_counter(&env);
+        if total > 0 {
+            storage::extend_instance_ttl(&env);
+        }
         let mut results = Vec::new(&env);
 
         if start_id == 0 || start_id > total {
