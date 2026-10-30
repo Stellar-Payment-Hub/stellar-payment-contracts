@@ -151,6 +151,24 @@ impl PaymentStream {
         Ok(withdrawable)
     }
 
+    /// Pause an active stream (Sender only).
+    pub fn pause_stream(env: Env, sender: Address, id: u64) -> Result<(), StreamError> {
+        sender.require_auth();
+        let mut stream = storage::get_stream(&env, id).ok_or(StreamError::StreamNotFound)?;
+        if stream.sender != sender {
+            return Err(StreamError::Unauthorized);
+        }
+        if stream.status != StreamStatus::Active {
+            return Err(StreamError::StreamNotActive);
+        }
+        stream.status = StreamStatus::Paused;
+        stream.paused_at = env.ledger().timestamp();
+        storage::set_stream(&env, id, &stream);
+        events::emit_stream_status(&env, id, StreamStatus::Paused);
+        storage::extend_stream_ttl(&env, id);
+        Ok(())
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("stream_ok")
     }
