@@ -122,6 +122,35 @@ impl PaymentStream {
         false
     }
 
+    /// Claim accrued withdrawable tokens (Recipient only).
+    pub fn withdraw_from_stream(env: Env, recipient: Address, id: u64) -> Result<i128, StreamError> {
+        recipient.require_auth();
+        let mut stream = storage::get_stream(&env, id).ok_or(StreamError::StreamNotFound)?;
+        if stream.recipient != recipient {
+            return Err(StreamError::Unauthorized);
+        }
+        if stream.status != StreamStatus::Active && stream.status != StreamStatus::Paused {
+            return Err(StreamError::StreamNotActive);
+        }
+
+        let withdrawable = Self::calculate_withdrawable(env.clone(), id);
+        if withdrawable <= 0 {
+            return Err(StreamError::ZeroWithdrawable);
+        }
+
+        stream.withdrawn_amount += withdrawable;
+        if stream.withdrawn_amount >= stream.deposit_amount {
+            stream.status = StreamStatus::Completed;
+        }
+        storage::set_stream(&env, id, &stream);
+        events::emit_stream_withdrawn(&env, id, &recipient, withdrawable);
+        if stream.status == StreamStatus::Completed {
+            events::emit_stream_status(&env, id, StreamStatus::Completed);
+        }
+        storage::extend_stream_ttl(&env, id);
+        Ok(withdrawable)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("stream_ok")
     }
