@@ -418,3 +418,38 @@ fn test_milestone_progressive_release() {
     let err = client.try_release_milestone(&payer, &settle_id, &1);
     assert_eq!(err, Err(Ok(SettlementError::MilestoneAlreadyExecuted)));
 }
+
+#[test]
+fn test_min_threshold_and_total_volume_tracking() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let registry_id = env.register(PaymentRegistry, ());
+    let contract_id = env.register(SettlementRouter, ());
+    let client = SettlementRouterClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    client.initialize(&admin, &registry_id);
+
+    // Set minimum threshold to 1,000 Stroops
+    client.set_min_threshold(&admin, &1000);
+    assert_eq!(client.get_min_threshold(), 1000);
+
+    let payer = Address::generate(&env);
+    let r1 = Address::generate(&env);
+    let mut tiny_shares = Vec::new(&env);
+    tiny_shares.push_back(RecipientShare { recipient: r1.clone(), amount: 500 });
+
+    let memo = String::from_str(&env, "Dust attempt");
+    let err = client.try_create_settlement(&payer, &tiny_shares, &memo);
+    assert_eq!(err, Err(Ok(SettlementError::InvalidTotalAmount)));
+
+    // Valid settlement above threshold
+    let mut valid_shares = Vec::new(&env);
+    valid_shares.push_back(RecipientShare { recipient: r1, amount: 50_000 });
+    let id = client.create_settlement(&payer, &valid_shares, &memo);
+    client.execute_settlement(&id, &payer);
+
+    // Verify lifetime volume was tracked
+    assert_eq!(client.get_total_volume(), 50_000);
+}
