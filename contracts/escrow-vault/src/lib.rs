@@ -319,6 +319,11 @@ impl EscrowVault {
         Ok(new_deadline)
     }
 
+    /// Query specific milestone details.
+    pub fn get_milestone(env: Env, escrow_id: u64, index: u32) -> Option<EscrowMilestone> {
+        storage::get_milestone(&env, escrow_id, index)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("escrow_ok")
     }
