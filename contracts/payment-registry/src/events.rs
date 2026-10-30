@@ -26,3 +26,13 @@ pub fn emit_payment_cancelled(env: &Env, id: u64, updated_at: u64) {
     let topics = (symbol_short!("payment"), symbol_short!("cancelled"));
     env.events().publish(topics, (id, updated_at));
 }
+
+pub fn emit_role_granted(env: &Env, account: &Address, role: crate::types::Role) {
+    let topics = (soroban_sdk::symbol_short!("role"), soroban_sdk::symbol_short!("granted"));
+    env.events().publish(topics, (account.clone(), role as u32));
+}
+
+pub fn emit_role_revoked(env: &Env, account: &Address, role: crate::types::Role) {
+    let topics = (soroban_sdk::symbol_short!("role"), soroban_sdk::symbol_short!("revoked"));
+    env.events().publish(topics, (account.clone(), role as u32));
+}

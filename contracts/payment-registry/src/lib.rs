@@ -6,7 +6,8 @@ pub mod types;
 
 use errors::ContractError;
 use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String, Symbol};
-use types::{Payment, PaymentStatus};
+use types::{Payment, PaymentAuditLog, PaymentCategory, PaymentStatus, Role};
+use soroban_sdk::{BytesN, Vec};
 
 #[contract]
 pub struct PaymentRegistry;
@@ -19,7 +20,40 @@ impl PaymentRegistry {
             return Err(ContractError::AlreadyInitialized);
         }
         storage::set_admin(&env, &admin);
+        storage::set_role(&env, &admin, Role::Admin, true);
+        storage::extend_instance_ttl(&env);
         Ok(())
+    }
+
+    /// Grant a protocol role to an account (Admin only).
+    pub fn grant_role(env: Env, caller: Address, account: Address, role: Role) -> Result<(), ContractError> {
+        caller.require_auth();
+        let admin = storage::get_admin(&env).ok_or(ContractError::Unauthorized)?;
+        if caller != admin && !storage::has_role(&env, &caller, Role::Admin) {
+            return Err(ContractError::Unauthorized);
+        }
+        storage::set_role(&env, &account, role, true);
+        events::emit_role_granted(&env, &account, role);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// Revoke a protocol role from an account (Admin only).
+    pub fn revoke_role(env: Env, caller: Address, account: Address, role: Role) -> Result<(), ContractError> {
+        caller.require_auth();
+        let admin = storage::get_admin(&env).ok_or(ContractError::Unauthorized)?;
+        if caller != admin && !storage::has_role(&env, &caller, Role::Admin) {
+            return Err(ContractError::Unauthorized);
+        }
+        storage::set_role(&env, &account, role, false);
+        events::emit_role_revoked(&env, &account, role);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// Check if an account possesses a specific protocol role.
+    pub fn has_role(env: Env, account: Address, role: Role) -> bool {
+        storage::has_role(&env, &account, role)
     }
 
     /// Read contract status and availability.
