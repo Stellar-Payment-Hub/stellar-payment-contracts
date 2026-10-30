@@ -750,6 +750,7 @@ impl SettlementRouter {
         };
         storage::set_settlement(&env, settlement_id, &record);
         storage::add_settled_volume(&env, total_amount);
+        storage::add_payer_volume(&env, &payer, total_amount);
         events::emit_settlement_completed(&env, settlement_id, &payer, total_amount);
 
         Self::release_reentrancy_lock(&env);
