@@ -297,6 +297,28 @@ impl EscrowVault {
         Ok(ms.amount)
     }
 
+    /// Extend escrow deadline timestamp (Buyer only).
+    pub fn extend_deadline(
+        env: Env,
+        buyer: Address,
+        escrow_id: u64,
+        extra_seconds: u64,
+    ) -> Result<u64, EscrowError> {
+        buyer.require_auth();
+        let mut esc = storage::get_escrow(&env, escrow_id).ok_or(EscrowError::EscrowNotFound)?;
+        if esc.buyer != buyer {
+            return Err(EscrowError::Unauthorized);
+        }
+        if esc.status != EscrowStatus::Funded && esc.status != EscrowStatus::Disputed {
+            return Err(EscrowError::EscrowNotActive);
+        }
+        esc.deadline += extra_seconds;
+        let new_deadline = esc.deadline;
+        storage::set_escrow(&env, escrow_id, &esc);
+        storage::extend_escrow_ttl(&env, escrow_id);
+        Ok(new_deadline)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("escrow_ok")
     }
