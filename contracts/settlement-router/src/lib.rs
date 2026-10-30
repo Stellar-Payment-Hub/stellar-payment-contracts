@@ -40,7 +40,7 @@ impl SettlementRouter {
         if count == 0 {
             return Err(SettlementError::EmptyRecipients);
         }
-        if count > 50 {
+        if count > 100 {
             return Err(SettlementError::TooManyRecipients);
         }
 
