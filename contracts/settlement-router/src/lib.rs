@@ -494,6 +494,23 @@ impl SettlementRouter {
     }
 
     /// Pause router operations (Admin only).
+    /// Emergency pause switch specifically for token settlements (Admin only).
+    pub fn pause_tokens(env: Env, admin: Address, paused: bool) -> Result<(), SettlementError> {
+        admin.require_auth();
+        let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
+        if admin != current_admin {
+            return Err(SettlementError::Unauthorized);
+        }
+        storage::set_token_paused(&env, paused);
+        storage::extend_instance_ttl(&env);
+        Ok(())
+    }
+
+    /// Query whether token operations are paused.
+    pub fn is_tokens_paused(env: Env) -> bool {
+        storage::is_token_paused(&env)
+    }
+
     pub fn pause(env: Env, admin: Address) -> Result<(), SettlementError> {
         admin.require_auth();
         let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
