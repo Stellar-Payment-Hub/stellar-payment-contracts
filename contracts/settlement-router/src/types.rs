@@ -53,3 +53,14 @@ pub struct WeightedShare {
     pub recipient: Address,
     pub weight: u32,
 }
+
+/// Milestone payment stage for progressive project disbursements
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SettlementMilestone {
+    pub settlement_id: u64,
+    pub milestone_index: u32,
+    pub description: String,
+    pub amount: i128,
+    pub executed: bool,
+}

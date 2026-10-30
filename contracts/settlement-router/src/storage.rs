@@ -96,3 +96,13 @@ pub fn extend_settlement_ttl(env: &Env, id: u64) {
     let rec_key = DataKey::Recipients(id);
     env.storage().persistent().extend_ttl(&rec_key, INSTANCE_BUMP_THRESHOLD, INSTANCE_LIFETIME);
 }
+
+pub fn set_milestone(env: &Env, id: u64, index: u32, milestone: &crate::types::SettlementMilestone) {
+    let key = DataKey::MilestoneRecord(id, index);
+    env.storage().persistent().set(&key, milestone);
+}
+
+pub fn get_milestone(env: &Env, id: u64, index: u32) -> Option<crate::types::SettlementMilestone> {
+    let key = DataKey::MilestoneRecord(id, index);
+    env.storage().persistent().get(&key)
+}
