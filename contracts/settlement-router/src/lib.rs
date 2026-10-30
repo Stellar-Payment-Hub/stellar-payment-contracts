@@ -156,6 +156,39 @@ impl SettlementRouter {
         Ok(())
     }
 
+    /// Withdraw accumulated protocol fees to designated treasury address (Admin only).
+    pub fn withdraw_protocol_fees(
+        env: Env,
+        admin: Address,
+        token: Address,
+        recipient: Address,
+    ) -> Result<i128, SettlementError> {
+        admin.require_auth();
+        let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
+        if admin != current_admin {
+            return Err(SettlementError::Unauthorized);
+        }
+        let treasury = storage::get_treasury(&env).ok_or(SettlementError::TreasuryNotConfigured)?;
+        if recipient != treasury {
+            return Err(SettlementError::Unauthorized);
+        }
+
+        let mut fee_record = storage::get_token_fees(&env, &token);
+        let available = fee_record.total_collected - fee_record.total_withdrawn;
+        if available <= 0 {
+            return Ok(0);
+        }
+
+        fee_record.total_withdrawn += available;
+        fee_record.last_withdrawn_at = env.ledger().timestamp();
+        storage::set_token_fees(&env, &token, &fee_record);
+
+        token_vault::TokenVault::transfer(&env, &token, &treasury, available)?;
+        events::emit_fee_withdrawn(&env, &token, &treasury, available);
+        storage::extend_instance_ttl(&env);
+        Ok(available)
+    }
+
     pub fn set_treasury(env: Env, admin: Address, treasury: Address) -> Result<(), SettlementError> {
         admin.require_auth();
         let current_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
