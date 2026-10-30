@@ -512,3 +512,28 @@ fn test_token_pause_and_validation_defenses() {
     let res = router_client.try_execute_token_split_bill(&payer, &token, &0, &recipients, &memo);
     assert!(res.is_err());
 }
+
+
+#[test]
+fn test_dynamic_fee_tier_progression() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let reg_contract_id = env.register(payment_registry::PaymentRegistry, ());
+    let router_contract_id = env.register(SettlementRouter, ());
+    let router_client = SettlementRouterClient::new(&env, &router_contract_id);
+    router_client.initialize(&admin, &reg_contract_id);
+
+    let payer = Address::generate(&env);
+
+    // 0 volume: Standard tier (50 bps = 0.5%)
+    assert_eq!(router_client.get_payer_tier(&payer), types::FeeTier::Standard);
+    let fee1 = router_client.calculate_dynamic_fee(&payer, &100_000_000);
+    assert_eq!(fee1, 500_000);
+
+    // Set VIP partner discount (10 bps = 0.1%)
+    router_client.set_partner_discount(&admin, &payer, &10);
+    let vip_fee = router_client.calculate_dynamic_fee(&payer, &100_000_000);
+    assert_eq!(vip_fee, 100_000);
+}
