@@ -196,6 +196,13 @@ impl SettlementRouter {
         settlement_id: u64,
         caller: Address,
     ) -> Result<u64, SettlementError> {
+        if storage::is_paused(&env) {
+            return Err(SettlementError::ContractPaused);
+        }
+        if storage::is_reentrancy_locked(&env) {
+            return Err(SettlementError::ReentrancyGuard);
+        }
+        storage::set_reentrancy_lock(&env, true);
         caller.require_auth();
 
         let mut record = storage::get_settlement(&env, settlement_id)
@@ -253,6 +260,8 @@ impl SettlementRouter {
             record.total_amount,
         );
 
+        storage::set_reentrancy_lock(&env, false);
+        storage::extend_settlement_ttl(&env, settlement_id);
         Ok(settlement_id)
     }
 

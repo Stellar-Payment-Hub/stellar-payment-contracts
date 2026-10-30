@@ -106,3 +106,11 @@ pub fn get_milestone(env: &Env, id: u64, index: u32) -> Option<crate::types::Set
     let key = DataKey::MilestoneRecord(id, index);
     env.storage().persistent().get(&key)
 }
+
+pub fn is_reentrancy_locked(env: &Env) -> bool {
+    env.storage().instance().get(&DataKey::ReentrancyLocked).unwrap_or(false)
+}
+
+pub fn set_reentrancy_lock(env: &Env, locked: bool) {
+    env.storage().instance().set(&DataKey::ReentrancyLocked, &locked);
+}
