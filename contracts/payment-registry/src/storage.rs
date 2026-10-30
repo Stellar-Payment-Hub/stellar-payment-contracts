@@ -75,3 +75,11 @@ pub fn extend_payment_ttl(env: &Env, id: u64) {
     let key = DataKey::Payment(id);
     env.storage().persistent().extend_ttl(&key, INSTANCE_BUMP_THRESHOLD, INSTANCE_LIFETIME);
 }
+
+pub fn set_audit_log(env: &Env, id: u64, log: &crate::types::PaymentAuditLog) {
+    env.storage().persistent().set(&DataKey::PaymentAudit(id), log);
+}
+
+pub fn get_audit_log(env: &Env, id: u64) -> Option<crate::types::PaymentAuditLog> {
+    env.storage().persistent().get(&DataKey::PaymentAudit(id))
+}

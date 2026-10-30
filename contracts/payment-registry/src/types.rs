@@ -48,3 +48,14 @@ pub enum PaymentCategory {
     Remittance = 4,
     Escrow = 5,
 }
+
+/// Immutable audit entry recording state machine transitions
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PaymentAuditLog {
+    pub payment_id: u64,
+    pub previous_status: PaymentStatus,
+    pub new_status: PaymentStatus,
+    pub transitioned_by: Address,
+    pub timestamp: u64,
+}
