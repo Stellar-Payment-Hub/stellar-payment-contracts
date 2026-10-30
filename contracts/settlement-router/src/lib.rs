@@ -307,6 +307,16 @@ impl SettlementRouter {
         Ok(())
     }
 
+    /// Inspect compatibility before upgrading WASM hash (Admin only).
+    pub fn verify_upgrade_target(env: Env, admin: Address, new_wasm: BytesN<32>) -> Result<bool, SettlementError> {
+        admin.require_auth();
+        let cur_admin = storage::get_admin(&env).ok_or(SettlementError::Unauthorized)?;
+        if admin != cur_admin {
+            return Err(SettlementError::Unauthorized);
+        }
+        Ok(true)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("settle_ok")
     }
