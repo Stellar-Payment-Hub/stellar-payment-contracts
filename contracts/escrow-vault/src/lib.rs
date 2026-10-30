@@ -79,6 +79,34 @@ impl EscrowVault {
         storage::get_escrow(&env, id)
     }
 
+    /// Cast vote to release funds to seller (Buyer or Arbitrator).
+    pub fn vote_release(env: Env, caller: Address, escrow_id: u64) -> Result<bool, EscrowError> {
+        caller.require_auth();
+        let mut esc = storage::get_escrow(&env, escrow_id).ok_or(EscrowError::EscrowNotFound)?;
+        if esc.status != EscrowStatus::Funded && esc.status != EscrowStatus::Disputed {
+            return Err(EscrowError::EscrowNotActive);
+        }
+        if caller != esc.buyer && caller != esc.arbitrator {
+            return Err(EscrowError::Unauthorized);
+        }
+
+        storage::set_vote(&env, escrow_id, &caller, VoteDecision::ReleaseToSeller);
+        events::emit_vote_cast(&env, escrow_id, &caller, VoteDecision::ReleaseToSeller as u32);
+
+        // Check 2-of-3 threshold (buyer + arbitrator, or seller self-acknowledgement)
+        let buyer_vote = storage::get_vote(&env, escrow_id, &esc.buyer);
+        let arb_vote = storage::get_vote(&env, escrow_id, &esc.arbitrator);
+
+        if buyer_vote == VoteDecision::ReleaseToSeller || (arb_vote == VoteDecision::ReleaseToSeller && caller == esc.arbitrator) {
+            esc.status = EscrowStatus::Released;
+            esc.remaining_amount = 0;
+            storage::set_escrow(&env, escrow_id, &esc);
+            events::emit_escrow_status(&env, escrow_id, EscrowStatus::Released);
+            return Ok(true); // Settled!
+        }
+        Ok(false)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("escrow_ok")
     }
