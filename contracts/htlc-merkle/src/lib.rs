@@ -98,7 +98,7 @@ impl HtlcMerkleVault {
         // Compute SHA-256 of candidate preimage using Soroban crypto
         let mut preimage_bytes = Bytes::new(&env);
         preimage_bytes.append(&preimage.clone().into());
-        let calculated_hash = env.crypto().sha256(&preimage_bytes);
+        let calculated_hash: BytesN<32> = env.crypto().sha256(&preimage_bytes).into();
 
         if calculated_hash != record.hashlock {
             return Err(HtlcError::InvalidPreimage);
@@ -139,7 +139,7 @@ impl HtlcMerkleVault {
     pub fn hash_preimage(env: Env, preimage: BytesN<32>) -> BytesN<32> {
         let mut b = Bytes::new(&env);
         b.append(&preimage.into());
-        env.crypto().sha256(&b)
+        env.crypto().sha256(&b).into()
     }
 
     /// Register a compressed Merkle distribution root for batch disbursements.
@@ -207,7 +207,7 @@ impl HtlcMerkleVault {
         let mut leaf_bytes = Bytes::new(&env);
         leaf_bytes.append(&Bytes::from_slice(&env, &index.to_be_bytes()));
         leaf_bytes.append(&Bytes::from_slice(&env, &amount.to_be_bytes()));
-        let mut current_hash = env.crypto().sha256(&leaf_bytes);
+        let mut current_hash: BytesN<32> = env.crypto().sha256(&leaf_bytes).into();
 
         // Verify merkle proof
         let proof_len = proof.len();
@@ -221,7 +221,7 @@ impl HtlcMerkleVault {
                 combined.append(&sibling.into());
                 combined.append(&current_hash.into());
             }
-            current_hash = env.crypto().sha256(&combined);
+            current_hash = env.crypto().sha256(&combined).into();
         }
 
         if current_hash != dist.root {
@@ -262,6 +262,20 @@ impl HtlcMerkleVault {
             }
         }
         0
+    }
+
+    /// Manually renew storage TTL for an active HTLC swap.
+    pub fn extend_swap_ttl(env: Env, id: u64) -> Result<(), HtlcError> {
+        let _rec = storage::get_htlc(&env, id).ok_or(HtlcError::HtlcNotFound)?;
+        storage::extend_htlc_ttl(&env, id);
+        Ok(())
+    }
+
+    /// Manually renew storage TTL for an active Merkle distribution.
+    pub fn extend_dist_ttl(env: Env, id: u64) -> Result<(), HtlcError> {
+        let _dist = storage::get_dist(&env, id).ok_or(HtlcError::DistributionNotFound)?;
+        env.storage().persistent().extend_ttl(&storage::DataKey::Distribution(id), 50_000, 100_000);
+        Ok(())
     }
 
     pub fn status(_env: Env) -> Symbol {
