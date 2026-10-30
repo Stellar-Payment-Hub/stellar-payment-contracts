@@ -55,3 +55,11 @@ pub fn set_role(env: &Env, account: &Address, role: crate::types::Role, enabled:
         env.storage().instance().remove(&key);
     }
 }
+
+pub fn is_paused(env: &Env) -> bool {
+    env.storage().instance().get(&DataKey::Paused).unwrap_or(false)
+}
+
+pub fn set_paused(env: &Env, paused: bool) {
+    env.storage().instance().set(&DataKey::Paused, &paused);
+}
