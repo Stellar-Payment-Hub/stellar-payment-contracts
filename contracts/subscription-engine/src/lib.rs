@@ -106,6 +106,11 @@ impl SubscriptionEngine {
         Ok(id)
     }
 
+    /// Query subscription record by ID.
+    pub fn get_subscription(env: Env, id: u64) -> Option<SubscriptionRecord> {
+        storage::get_subscription(&env, id)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("sub_ok")
     }
