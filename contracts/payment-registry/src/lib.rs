@@ -732,6 +732,29 @@ mod test {
         assert_eq!(dispute.initiator, creator);
     }
 
+        #[test]
+    fn test_sanctions_blacklist_enforcement() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(PaymentRegistry, ());
+        let client = PaymentRegistryClient::new(&env, &contract_id);
+        let admin = Address::generate(&env);
+        client.initialize(&admin);
+
+        let bad_actor = Address::generate(&env);
+        let recipient = Address::generate(&env);
+        let memo = String::from_str(&env, "Sanctioned payment");
+
+        // Blacklist bad actor
+        client.set_blacklisted_address(&admin, &bad_actor, &true);
+        assert_eq!(client.is_address_blacklisted(&bad_actor), true);
+
+        // Attempt payment -> must fail with Unauthorized
+        let res = client.try_create_payment(&bad_actor, &recipient, &10_000_000, &memo);
+        assert_eq!(res, Err(Ok(ContractError::Unauthorized)));
+    }
+
     #[test]
     fn test_same_address_rejected() {
         let env = Env::default();
