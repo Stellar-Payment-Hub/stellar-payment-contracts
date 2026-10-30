@@ -82,6 +82,38 @@ impl PaymentStream {
         storage::get_stream(&env, id)
     }
 
+    /// Compute current accrued tokens available for withdrawal.
+    pub fn calculate_withdrawable(env: Env, id: u64) -> i128 {
+        let stream = match storage::get_stream(&env, id) {
+            Some(s) => s,
+            None => return 0,
+        };
+        if stream.status == StreamStatus::Cancelled || stream.status == StreamStatus::Completed {
+            return 0;
+        }
+
+        let now = env.ledger().timestamp();
+        if stream.cliff_time > 0 && now < stream.cliff_time {
+            return 0; // Cliff not yet reached
+        }
+
+        let effective_now = if stream.status == StreamStatus::Paused {
+            stream.paused_at
+        } else {
+            now
+        };
+
+        let effective_stop = stream.stop_time + stream.pause_duration;
+        if effective_now >= effective_stop {
+            return stream.deposit_amount - stream.withdrawn_amount;
+        }
+
+        let elapsed = effective_now - stream.start_time - stream.pause_duration;
+        let total_accrued = (elapsed as i128) * stream.rate_per_second;
+        let available = total_accrued - stream.withdrawn_amount;
+        available.max(0).min(stream.deposit_amount - stream.withdrawn_amount)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("stream_ok")
     }
