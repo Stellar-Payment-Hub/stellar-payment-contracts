@@ -249,6 +249,27 @@ impl EscrowVault {
         Ok(())
     }
 
+    /// Submit cryptographic proof hash of completed deliverable (Seller only).
+    pub fn submit_milestone_evidence(
+        env: Env,
+        seller: Address,
+        escrow_id: u64,
+        index: u32,
+        evidence_hash: BytesN<32>,
+    ) -> Result<(), EscrowError> {
+        seller.require_auth();
+        let esc = storage::get_escrow(&env, escrow_id).ok_or(EscrowError::EscrowNotFound)?;
+        if esc.seller != seller {
+            return Err(EscrowError::Unauthorized);
+        }
+        let mut ms = storage::get_milestone(&env, escrow_id, index).ok_or(EscrowError::MilestoneNotFound)?;
+        ms.evidence_hash = Some(evidence_hash.clone());
+        storage::set_milestone(&env, escrow_id, index, &ms);
+        events::emit_evidence_submitted(&env, escrow_id, index, &evidence_hash);
+        storage::extend_escrow_ttl(&env, escrow_id);
+        Ok(())
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("escrow_ok")
     }
