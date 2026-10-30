@@ -309,7 +309,33 @@ impl SettlementRouter {
 
     /// Retrieve settlement record.
     pub fn get_settlement(env: Env, settlement_id: u64) -> Result<SettlementRecord, SettlementError> {
+        storage::extend_instance_ttl(&env);
         storage::get_settlement(&env, settlement_id).ok_or(SettlementError::SettlementNotFound)
+    }
+
+    /// Read a paginated list of settlement records.
+    pub fn paginate_settlements(env: Env, start_id: u64, limit: u32) -> Vec<SettlementRecord> {
+        storage::extend_instance_ttl(&env);
+        let total = storage::get_counter(&env);
+        let mut results = Vec::new(&env);
+
+        if start_id == 0 || start_id > total {
+            return results;
+        }
+
+        let max = if (start_id + limit as u64 - 1) < total {
+            start_id + limit as u64 - 1
+        } else {
+            total
+        };
+
+        for id in start_id..=max {
+            if let Some(record) = storage::get_settlement(&env, id) {
+                results.push_back(record);
+            }
+        }
+
+        results
     }
 
     /// Retrieve recipient shares for a settlement.
