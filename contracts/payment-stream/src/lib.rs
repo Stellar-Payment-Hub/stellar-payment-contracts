@@ -233,6 +233,31 @@ impl PaymentStream {
         Ok(to_recipient)
     }
 
+    /// Create multiple streaming contracts in a single atomic invocation for organizational payroll.
+    pub fn create_batch_streams(
+        env: Env,
+        sender: Address,
+        token: Address,
+        items: Vec<BatchStreamItem>,
+        duration_seconds: u64,
+    ) -> Result<u32, StreamError> {
+        sender.require_auth();
+        let count = items.len();
+        for i in 0..count {
+            let item = items.get(i).unwrap();
+            Self::create_stream(
+                env.clone(),
+                sender.clone(),
+                item.recipient,
+                token.clone(),
+                item.deposit_amount,
+                duration_seconds,
+                item.cliff_time,
+            )?;
+        }
+        Ok(count)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("stream_ok")
     }
