@@ -248,6 +248,23 @@ impl SettlementRouter {
     }
 
     /// Read contract health/status symbol.
+    /// Query cumulative settled volume for a payer.
+    pub fn get_payer_volume(env: Env, payer: Address) -> i128 {
+        storage::get_payer_volume(&env, &payer)
+    }
+
+    /// Query dynamic fee tier for a payer based on lifetime volume.
+    pub fn get_payer_tier(env: Env, payer: Address) -> types::FeeTier {
+        let vol = storage::get_payer_volume(&env, &payer);
+        if vol >= 10_000_000_0000000 { // >= 10M stroops: Gold
+            types::FeeTier::Gold
+        } else if vol >= 1_000_000_0000000 { // >= 1M stroops: Silver
+            types::FeeTier::Silver
+        } else {
+            types::FeeTier::Standard
+        }
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("settle_ok")
     }
