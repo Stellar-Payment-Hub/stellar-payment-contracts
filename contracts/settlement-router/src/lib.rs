@@ -460,6 +460,16 @@ impl SettlementRouter {
     }
 
     /// Check if router is currently paused.
+    /// Check if a token is whitelisted for settlements.
+    pub fn is_token_whitelisted(env: Env, token: Address) -> bool {
+        storage::is_token_whitelisted(&env, &token)
+    }
+
+    /// Query full token configuration parameters.
+    pub fn get_token_config(env: Env, token: Address) -> Option<types::TokenConfig> {
+        storage::get_token_config(&env, &token)
+    }
+
     pub fn is_paused(env: Env) -> bool {
         storage::is_paused(&env)
     }
