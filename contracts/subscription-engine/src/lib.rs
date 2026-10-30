@@ -148,6 +148,10 @@ impl SubscriptionEngine {
         }
 
         let plan = storage::get_plan(&env, sub.plan_id).ok_or(SubscriptionError::PlanNotFound)?;
+        if !plan.active {
+            return Err(SubscriptionError::PlanInactive);
+        }
+
         sub.cycles_billed += 1;
         sub.last_billed_at = now;
         sub.next_bill_at = now + plan.interval_seconds;
