@@ -219,6 +219,36 @@ impl EscrowVault {
         Ok(())
     }
 
+    /// Register a progressive milestone deliverable for an escrow (Buyer only).
+    pub fn add_escrow_milestone(
+        env: Env,
+        buyer: Address,
+        escrow_id: u64,
+        index: u32,
+        amount: i128,
+        description: String,
+    ) -> Result<(), EscrowError> {
+        buyer.require_auth();
+        let esc = storage::get_escrow(&env, escrow_id).ok_or(EscrowError::EscrowNotFound)?;
+        if esc.buyer != buyer {
+            return Err(EscrowError::Unauthorized);
+        }
+        if amount <= 0 || amount > esc.remaining_amount {
+            return Err(EscrowError::InvalidAmount);
+        }
+        let ms = EscrowMilestone {
+            escrow_id,
+            milestone_index: index,
+            amount,
+            description,
+            evidence_hash: None,
+            approved: false,
+        };
+        storage::set_milestone(&env, escrow_id, index, &ms);
+        storage::extend_escrow_ttl(&env, escrow_id);
+        Ok(())
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("escrow_ok")
     }
