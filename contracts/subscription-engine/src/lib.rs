@@ -240,6 +240,16 @@ impl SubscriptionEngine {
         Ok(())
     }
 
+    /// Query active subscriber count for merchant.
+    pub fn get_subscriber_count(env: Env, merchant: Address) -> u32 {
+        storage::get_merchant_subscriber_count(&env, &merchant)
+    }
+
+    /// Query monthly recurring revenue (MRR) for merchant.
+    pub fn get_merchant_mrr(env: Env, merchant: Address) -> i128 {
+        storage::get_merchant_mrr(&env, &merchant)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("sub_ok")
     }
