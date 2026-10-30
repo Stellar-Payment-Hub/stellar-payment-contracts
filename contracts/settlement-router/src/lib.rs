@@ -64,12 +64,16 @@ impl SettlementRouter {
         let settlement_id = storage::increment_counter(env);
         let timestamp = env.ledger().timestamp();
 
+        storage::extend_instance_ttl(env);
         let record = SettlementRecord {
             id: settlement_id,
             payer: payer.clone(),
+            token: None,
             total_amount: calculated_total,
+            fee_amount: 0,
             recipient_count: count as u32,
             memo: memo.clone(),
+            memo_hash: None,
             status: SettlementStatus::Created,
             sub_payment_ids: Vec::new(env),
             created_at: timestamp,
