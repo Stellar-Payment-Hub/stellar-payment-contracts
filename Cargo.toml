@@ -6,6 +6,7 @@ members = [
     "contracts/subscription-engine",
     "contracts/escrow-vault",
     "contracts/payment-stream",
+    "contracts/htlc-merkle",
 ]
 
 [profile.release]
