@@ -258,6 +258,16 @@ impl PaymentStream {
         Ok(count)
     }
 
+    /// Return (withdrawn_by_recipient, withdrawable_now, unaccrued_locked).
+    pub fn get_stream_balances(env: Env, id: u64) -> (i128, i128, i128) {
+        if let Some(s) = storage::get_stream(&env, id) {
+            let withdrawable = Self::calculate_withdrawable(env.clone(), id);
+            let locked = s.deposit_amount - s.withdrawn_amount - withdrawable;
+            return (s.withdrawn_amount, withdrawable, locked.max(0));
+        }
+        (0, 0, 0)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("stream_ok")
     }
