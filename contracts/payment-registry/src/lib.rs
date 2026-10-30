@@ -487,7 +487,7 @@ impl PaymentRegistry {
 #[cfg(test)]
 mod test {
     use super::*;
-    use soroban_sdk::{testutils::Address as _, Env, String};
+    use soroban_sdk::{testutils::{Address as _, Ledger as _}, Env, String};
 
     #[test]
     fn test_create_and_read_payment() {
@@ -635,6 +635,66 @@ mod test {
 
         let paginated = client.paginate_payments(&1, &10);
         assert_eq!(paginated.len(), 5);
+    }
+
+
+    #[test]
+    fn test_expirable_payment_lifecycle() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(PaymentRegistry, ());
+        let client = PaymentRegistryClient::new(&env, &contract_id);
+
+        let creator = Address::generate(&env);
+        let recipient = Address::generate(&env);
+        let memo = String::from_str(&env, "Time-limited offer");
+
+        // Deadline in future: 1000s
+        let deadline = env.ledger().timestamp() + 1000;
+        let id = client.create_expirable_payment(&creator, &recipient, &5000, &memo, &deadline);
+
+        // Before deadline: should not expire
+        let expired = client.check_and_expire(&id);
+        assert_eq!(expired, false);
+
+        // Jump ledger time past deadline
+        env.ledger().set_timestamp(deadline + 5);
+        let expired_now = client.check_and_expire(&id);
+        assert_eq!(expired_now, true);
+
+        let payment = client.get_payment(&id);
+        assert_eq!(payment.status, PaymentStatus::Expired);
+    }
+
+    #[test]
+    fn test_payment_dispute_and_audit_log() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(PaymentRegistry, ());
+        let client = PaymentRegistryClient::new(&env, &contract_id);
+
+        let creator = Address::generate(&env);
+        let recipient = Address::generate(&env);
+        let memo = String::from_str(&env, "Disputable invoice");
+
+        let id = client.create_payment(&creator, &recipient, &10000, &memo);
+
+        // Transition status and check audit log
+        client.update_payment_status(&creator, &id, &PaymentStatus::Processing);
+        let audit = client.get_audit_log(&id);
+        assert_eq!(audit.previous_status, PaymentStatus::Pending);
+        assert_eq!(audit.new_status, PaymentStatus::Processing);
+        assert_eq!(audit.transitioned_by, creator);
+
+        // Open dispute
+        let reason = String::from_str(&env, "Services not rendered");
+        client.open_dispute(&creator, &id, &reason);
+
+        let dispute = client.get_dispute(&id);
+        assert_eq!(dispute.status, DisputeStatus::Active);
+        assert_eq!(dispute.initiator, creator);
     }
 
     #[test]
