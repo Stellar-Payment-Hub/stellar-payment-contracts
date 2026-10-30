@@ -85,3 +85,12 @@ pub struct PaymentDispute {
     pub opened_at: u64,
     pub resolved_at: Option<u64>,
 }
+
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct HubTelemetry {
+    pub total_payments: u64,
+    pub contract_paused: bool,
+    pub protocol_version: u32,
+}
