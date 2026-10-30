@@ -63,6 +63,11 @@ impl SubscriptionEngine {
         Ok(id)
     }
 
+    /// Query plan details by ID.
+    pub fn get_plan(env: Env, plan_id: u64) -> Option<SubscriptionPlan> {
+        storage::get_plan(&env, plan_id)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("sub_ok")
     }
