@@ -527,6 +527,35 @@ impl SettlementRouter {
     /// Execute settlement: Invokes the PaymentRegistry contract for each recipient
     /// (Inter-contract communication) and marks settlement completed.
     /// Execute a multi-recipient settlement using a whitelisted SEP-41 Soroban token.
+    /// Split bill across multiple recipients with remainder safe allocation.
+    pub fn execute_token_split_bill(
+        env: Env,
+        payer: Address,
+        token: Address,
+        total_amount: i128,
+        recipients: Vec<Address>,
+        memo: String,
+    ) -> Result<u64, SettlementError> {
+        if total_amount <= 0 {
+            return Err(SettlementError::InvalidTotalAmount);
+        }
+        let count = recipients.len();
+        if count == 0 {
+            return Err(SettlementError::EmptyRecipients);
+        }
+        let base_share = total_amount / (count as i128);
+        let remainder = total_amount % (count as i128);
+
+        let mut shares = Vec::new(&env);
+        for i in 0..count {
+            let recipient = recipients.get(i).unwrap();
+            let amount = if i == 0 { base_share + remainder } else { base_share };
+            shares.push_back(types::RecipientShare { recipient, amount });
+        }
+
+        Self::execute_token_settlement(env, payer, token, shares, memo)
+    }
+
     pub fn execute_token_settlement(
         env: Env,
         payer: Address,
