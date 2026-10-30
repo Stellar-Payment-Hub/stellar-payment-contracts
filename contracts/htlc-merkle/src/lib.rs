@@ -179,6 +179,11 @@ impl HtlcMerkleVault {
         storage::get_dist(&env, id)
     }
 
+    /// Check if a specific leaf index has already been claimed.
+    pub fn is_leaf_claimed(env: Env, dist_id: u64, index: u32) -> bool {
+        storage::is_leaf_claimed(&env, dist_id, index)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("htlc_ok")
     }
