@@ -64,3 +64,11 @@ pub struct SettlementMilestone {
     pub amount: i128,
     pub executed: bool,
 }
+
+/// Timelock parameters for conditional settlement escrow
+#[contracttype]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct EscrowTimelock {
+    pub release_after: u64,
+    pub auto_refund_after: u64,
+}

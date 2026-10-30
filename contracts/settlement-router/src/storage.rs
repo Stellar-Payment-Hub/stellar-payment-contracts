@@ -14,6 +14,10 @@ pub enum DataKey {
     ReentrancyLocked,
     DisputeRecord(u64),
     MilestoneRecord(u64, u32),
+    Timelock(u64),
+    Arbitrator,
+    MinSettlementThreshold,
+    TotalVolumeSettled,
 }
 
 pub fn set_admin(env: &Env, admin: &Address) {
@@ -113,4 +117,13 @@ pub fn is_reentrancy_locked(env: &Env) -> bool {
 
 pub fn set_reentrancy_lock(env: &Env, locked: bool) {
     env.storage().instance().set(&DataKey::ReentrancyLocked, &locked);
+}
+
+
+pub fn set_timelock(env: &Env, id: u64, lock: &crate::types::EscrowTimelock) {
+    env.storage().persistent().set(&DataKey::Timelock(id), lock);
+}
+
+pub fn get_timelock(env: &Env, id: u64) -> Option<crate::types::EscrowTimelock> {
+    env.storage().persistent().get(&DataKey::Timelock(id))
 }
