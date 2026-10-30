@@ -199,3 +199,8 @@ pub fn get_token_fees(env: &Env, token: &Address) -> TokenFeeRecord {
 pub fn set_token_fees(env: &Env, token: &Address, record: &TokenFeeRecord) {
     env.storage().persistent().set(&DataKey::TokenFees(token.clone()), record);
 }
+
+pub fn extend_token_ttl(env: &Env, token: &Address) {
+    env.storage().persistent().extend_ttl(&DataKey::TokenWhitelist(token.clone()), 50_000, 100_000);
+    env.storage().persistent().extend_ttl(&DataKey::TokenFees(token.clone()), 50_000, 100_000);
+}
