@@ -338,6 +338,54 @@ impl SettlementRouter {
         Self::create_settlement_internal(&env, &payer, &recipient_shares, &memo)
     }
 
+    /// Split a bill by custom integer weights with remainder preservation to the first recipient.
+    pub fn split_bill_weighted(
+        env: Env,
+        payer: Address,
+        total_amount: i128,
+        shares: Vec<WeightedShare>,
+        memo: String,
+    ) -> Result<u64, SettlementError> {
+        payer.require_auth();
+
+        let count = shares.len();
+        if count == 0 {
+            return Err(SettlementError::EmptyRecipients);
+        }
+        if total_amount <= 0 {
+            return Err(SettlementError::InvalidTotalAmount);
+        }
+
+        let mut total_weight: u64 = 0;
+        for i in 0..count {
+            let share = shares.get(i).unwrap();
+            if share.weight == 0 {
+                return Err(SettlementError::InvalidWeight);
+            }
+            total_weight += share.weight as u64;
+        }
+
+        if total_weight == 0 {
+            return Err(SettlementError::ZeroWeightSum);
+        }
+
+        let mut recipient_shares = Vec::new(&env);
+        let mut allocated: i128 = 0;
+
+        for i in 0..count {
+            let share = shares.get(i).unwrap();
+            let amount = if i == count - 1 {
+                total_amount - allocated
+            } else {
+                (total_amount * (share.weight as i128)) / (total_weight as i128)
+            };
+            allocated += amount;
+            recipient_shares.push_back(RecipientShare { recipient: share.recipient, amount });
+        }
+
+        Self::create_settlement_internal(&env, &payer, &recipient_shares, &memo)
+    }
+
     /// Retrieve settlement record.
     pub fn get_settlement(env: Env, settlement_id: u64) -> Result<SettlementRecord, SettlementError> {
         storage::extend_instance_ttl(&env);
