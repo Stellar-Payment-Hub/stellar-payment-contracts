@@ -83,3 +83,11 @@ pub fn set_audit_log(env: &Env, id: u64, log: &crate::types::PaymentAuditLog) {
 pub fn get_audit_log(env: &Env, id: u64) -> Option<crate::types::PaymentAuditLog> {
     env.storage().persistent().get(&DataKey::PaymentAudit(id))
 }
+
+pub fn is_reentrancy_locked(env: &Env) -> bool {
+    env.storage().instance().get(&DataKey::ReentrancyLocked).unwrap_or(false)
+}
+
+pub fn set_reentrancy_lock(env: &Env, locked: bool) {
+    env.storage().instance().set(&DataKey::ReentrancyLocked, &locked);
+}
