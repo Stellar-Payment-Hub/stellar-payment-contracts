@@ -557,6 +557,23 @@ impl SettlementRouter {
         Self::execute_token_settlement(env, payer, token, shares, memo)
     }
 
+    /// Execute token settlement with cryptographic 32-byte memo hash audit link.
+    pub fn execute_token_settle_hashed(
+        env: Env,
+        payer: Address,
+        token: Address,
+        recipients: Vec<types::RecipientShare>,
+        memo: String,
+        memo_hash: BytesN<32>,
+    ) -> Result<u64, SettlementError> {
+        let id = Self::execute_token_settlement(env.clone(), payer, token, recipients, memo)?;
+        if let Some(mut rec) = storage::get_settlement(&env, id) {
+            rec.memo_hash = Some(memo_hash);
+            storage::set_settlement(&env, id, &rec);
+        }
+        Ok(id)
+    }
+
     pub fn execute_token_settlement(
         env: Env,
         payer: Address,
