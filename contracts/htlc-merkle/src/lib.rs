@@ -135,6 +135,13 @@ impl HtlcMerkleVault {
         Ok(record.amount)
     }
 
+    /// Public utility: compute SHA-256 hash of a 32-byte secret.
+    pub fn hash_preimage(env: Env, preimage: BytesN<32>) -> BytesN<32> {
+        let mut b = Bytes::new(&env);
+        b.append(&preimage.into());
+        env.crypto().sha256(&b)
+    }
+
     pub fn status(_env: Env) -> Symbol {
         symbol_short!("htlc_ok")
     }
