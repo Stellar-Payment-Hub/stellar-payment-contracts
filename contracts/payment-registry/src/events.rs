@@ -56,3 +56,8 @@ pub fn emit_memo_hash_bound(env: &Env, id: u64, memo_hash: &soroban_sdk::BytesN<
     let topics = (soroban_sdk::symbol_short!("memo"), soroban_sdk::symbol_short!("bound"));
     env.events().publish(topics, (id, memo_hash.clone()));
 }
+
+pub fn emit_payment_expired(env: &Env, id: u64, timestamp: u64) {
+    let topics = (soroban_sdk::symbol_short!("payment"), soroban_sdk::symbol_short!("expired"));
+    env.events().publish(topics, (id, timestamp));
+}

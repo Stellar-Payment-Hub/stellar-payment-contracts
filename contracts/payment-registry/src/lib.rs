@@ -271,6 +271,74 @@ impl PaymentRegistry {
         Ok(id)
     }
 
+    /// Create an expirable payment record that automatically invalidates after a timestamp.
+    pub fn create_expirable_payment(
+        env: Env,
+        creator: Address,
+        recipient: Address,
+        amount: i128,
+        memo: String,
+        deadline: u64,
+    ) -> Result<u64, ContractError> {
+        if storage::is_paused(&env) {
+            return Err(ContractError::ContractPaused);
+        }
+        creator.require_auth();
+
+        if amount <= 0 {
+            return Err(ContractError::InvalidAmount);
+        }
+        if creator == recipient {
+            return Err(ContractError::SameAddress);
+        }
+
+        let now = env.ledger().timestamp();
+        if deadline <= now {
+            return Err(ContractError::InvalidDeadline);
+        }
+
+        storage::extend_instance_ttl(&env);
+        let id = storage::increment_count(&env);
+
+        let payment = Payment {
+            id,
+            creator: creator.clone(),
+            recipient: recipient.clone(),
+            amount,
+            token: None,
+            category: PaymentCategory::Invoice,
+            memo,
+            memo_hash: None,
+            status: PaymentStatus::Pending,
+            deadline: Some(deadline),
+            created_at: now,
+            updated_at: now,
+        };
+
+        storage::set_payment(&env, id, &payment);
+        storage::extend_payment_ttl(&env, id);
+        events::emit_payment_created(&env, id, &creator, &recipient, amount);
+
+        Ok(id)
+    }
+
+    /// Check and apply expiration status if current ledger timestamp exceeds deadline.
+    pub fn check_and_expire(env: Env, id: u64) -> Result<bool, ContractError> {
+        let mut payment = storage::get_payment(&env, id).ok_or(ContractError::PaymentNotFound)?;
+        let now = env.ledger().timestamp();
+
+        if let Some(deadline) = payment.deadline {
+            if now >= deadline && payment.status == PaymentStatus::Pending {
+                payment.status = PaymentStatus::Expired;
+                payment.updated_at = now;
+                storage::set_payment(&env, id, &payment);
+                events::emit_payment_expired(&env, id, now);
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
     /// Read a payment record by ID.
     pub fn get_payment(env: Env, id: u64) -> Result<Payment, ContractError> {
         storage::extend_instance_ttl(&env);
