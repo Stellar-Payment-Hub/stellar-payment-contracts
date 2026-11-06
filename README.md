@@ -84,14 +84,18 @@ cargo clippy --all-targets -- -D warnings
 
 ## Deployed Testnet Contract Identifiers
 
-| Contract Name | Soroban Testnet Contract ID |
-|---|---|
-| **SettlementRouter** | `CA3D5KRYMCMGRKWP74GS652UP2WOGS63KAODURZZJJNVHUB3K2IOZRNQ` |
-| **PaymentRegistry** | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
-| **SubscriptionEngine** | `CB7A42G52QO7PGL42DLY2KEMUAKJ2YQZVRJ27I4DUMSQQ76N55HGYZXR` |
-| **EscrowVault** | `CCZ2M35KMYPZXDOGYV273X2GHYT6BOP78HUK6Y4T5678JIKLMNOPQRST` |
-| **PaymentStream** | `CD99127XYZKLO5648937GHUTXVM7125678QWERTYUIOPASDFGHJKLMNB` |
-| **HtlcMerkle** | `CA888877665544332211AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPPQQRR` |
+Both primary contracts are verified, persistent, and actively initialized on the Stellar Testnet:
+
+| Contract Name | Soroban Testnet Contract ID | Stellar.Expert Explorer |
+|---|---|---|
+| **PaymentRegistry** | `CD5D7OITCBFJJDHQVEZ6Y7MYIZSWEVOCQO4ES7WZEWW3S37IGUVZAI7S` | [View on Stellar.Expert](https://stellar.expert/explorer/testnet/contract/CD5D7OITCBFJJDHQVEZ6Y7MYIZSWEVOCQO4ES7WZEWW3S37IGUVZAI7S) |
+| **SettlementRouter** | `CAGDS3H6GSNB7FSSFFDAAO5MX3GNVCUBNKIVUI52TAK7PXUUEXYCM66E` | [View on Stellar.Expert](https://stellar.expert/explorer/testnet/contract/CAGDS3H6GSNB7FSSFFDAAO5MX3GNVCUBNKIVUI52TAK7PXUUEXYCM66E) |
+
+### Automated On-Chain Health & TTL Verification
+To verify the live on-chain instance status, WASM hash, and storage persistence:
+```bash
+node scripts/verify-ttl-status.js
+```
 
 ---
 
