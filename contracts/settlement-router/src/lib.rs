@@ -796,15 +796,15 @@ impl SettlementRouter {
         }
 
         let fee_amount = Self::calculate_fee_amount(env.clone(), total_amount);
-        let mut net_total = total_amount - fee_amount;
+        let total_deposit = total_amount + fee_amount;
 
-        // Transfer total from payer to contract
+        // Transfer total deposit (shares + protocol fee) from payer to contract
         let token_client = token_vault::TokenVault::transfer_direct(
             &env,
             &token,
             &payer,
             &env.current_contract_address(),
-            total_amount,
+            total_deposit,
         );
         if token_client.is_err() {
             Self::release_reentrancy_lock(&env);
